@@ -1,0 +1,14 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center; /* 横方向に中央揃え */
+  align-items: center; /* 縦方向に中央揃え (もし縦方向も中央にしたい場合) */
+  height: 100vh; /* ウィンドウの高さを100%に */
+}
+
+canvas {
+  display: block;
+  margin: 0 auto; /* キャンバスの左右中央揃え */
+}
