@@ -98,6 +98,7 @@ p5.prototype.drawRandomSquares = (arg) => {
   const minSize = arg.minSize || 10;
   const maxSize = arg.maxSize || 50;
   const speed = arg.speed || 30;
+  const bl = arg.bl || 0;
 
   // 出現制御
   if (frameCount % speed === 0) {
@@ -119,7 +120,7 @@ p5.prototype.drawRandomSquares = (arg) => {
   for (let square of data.randomSquares) {
     RandomSquares_Layer.fill(square.color); // 正しい色プロパティにアクセス
     RandomSquares_Layer.noStroke();
-    RandomSquares_Layer.square(square.x, square.y, square.size);
+    RandomSquares_Layer.square(square.x, square.y, square.size, bl);
   }
 
   // メインキャンバスに描画
@@ -130,9 +131,9 @@ p5.prototype.drawRandomSquares = (arg) => {
 p5.prototype.circle_free = (arg) => {
   const num = arg.num || 7; //最大7
   const r = arg.r || 150;
-  const vx = arg.vx || random(-2, 2);
-  const vy = arg.vy || randam(-2, 2);
-  const bl = arg.bl || 35;
+  const vx = arg.vx || random(-3, 3);
+  const vy = arg.vy || random(-3, 3);
+  const bl = arg.bl || 100;
 
   CircleFree_Layer.push();
   CircleFree_Layer.clear();
