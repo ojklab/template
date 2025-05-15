@@ -1,13 +1,12 @@
-"use strict";
+'use strict';
 
+/* 各テンプレートのレイヤー */
 let CircleFree_Layer;
 let CircleRotate_Layer;
 let CirclePaint_Layer;
 let DrawShapeGrid_Layer;
 let RandomSquares_Layer;
 let SpiralSquares_Layer;
-
-// const circle_free_pg = createGraphics(width, height);
 
 p5.prototype.workshop_setup = (arg) => {
   CircleFree_Layer = createGraphics(width, height);
@@ -17,6 +16,8 @@ p5.prototype.workshop_setup = (arg) => {
   RandomSquares_Layer = createGraphics(width, height);
   SpiralSquares_Layer = createGraphics(width, height);
 };
+
+/* 各テンプレートのデータ */
 
 const data = {
   drawShapeGrid_colors: [],
@@ -29,8 +30,9 @@ const data = {
   spiralSquares: [],
 };
 
+/* テンプレート：図形を円運動させる */
 p5.prototype.drawSpiralSquares = (arg) => {
-  // 初回のみスパイラル四角形を初期化
+  // 初回のみ初期化
   if (data.spiralSquares.length === 0) {
     const num = arg.num || 4;
     const size = arg.size || 30;
@@ -59,7 +61,6 @@ p5.prototype.drawSpiralSquares = (arg) => {
     }
   }
 
-  // 四角形をスパイラルに描画
   SpiralSquares_Layer.clear();
   for (let square of data.spiralSquares) {
     // 中心を基点にスパイラル移動
@@ -88,7 +89,7 @@ p5.prototype.drawSpiralSquares = (arg) => {
   image(SpiralSquares_Layer, 0, 0);
 };
 
-/* drawRandomSquares (ランダムに四角形を出現させる) */
+/* テンプレート：図形をランダムに出現させる */
 p5.prototype.drawRandomSquares = (arg) => {
   const baseColors = arg.baseColors || [
     color(150, 200, 250),
@@ -127,7 +128,7 @@ p5.prototype.drawRandomSquares = (arg) => {
   image(RandomSquares_Layer, 0, 0);
 };
 
-/*circle_free（円が自由に動き回る）*/
+/* テンプレート：図形をランダムに動き回らせる（跳ね返る） */
 p5.prototype.circle_free = (arg) => {
   const num = arg.num || 7; //最大7
   const r = arg.r || 150;
@@ -184,7 +185,7 @@ p5.prototype.circle_free = (arg) => {
   image(CircleFree_Layer, 0, 0);
 };
 
-/*circle_rotate（時計回りに円が回る）*/
+/* テンプレート：1個の図形をスパイラル運動させる */
 p5.prototype.circle_rotate = (arg) => {
   const spd = arg.spd || 0.02;
   const radiusDec = arg.radiusDec || 0.2;
@@ -298,7 +299,7 @@ p5.prototype.circle_paint = (arg) => {
   image(CirclePaint_Layer, 0, 0); // メインキャンバスに描画
 };
 
-/*drawShapeGrid（25個の四角）*/
+/* テンプレート：図形をグリッドに敷き詰める */
 p5.prototype.drawShapeGrid = (arg) => {
   const cols = arg.cols || 5;
   const rows = arg.rows || 5;
@@ -353,3 +354,5 @@ p5.prototype.drawShapeGrid = (arg) => {
   DrawShapeGrid_Layer.pop();
   image(DrawShapeGrid_Layer, 0, 0);
 };
+
+/* テンプレート：直線を任意の角度で動かす */
