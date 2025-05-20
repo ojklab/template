@@ -1,7 +1,7 @@
 'use strict';
 
 /* 各テンプレートのレイヤー */
-let CircleFree_Layer;
+let reboundLayer;
 let CircleRotate_Layer;
 let CirclePaint_Layer;
 let DrawShapeGrid_Layer;
@@ -9,7 +9,7 @@ let RandomSquares_Layer;
 let SpiralSquares_Layer;
 
 p5.prototype.workshop_setup = (arg) => {
-  CircleFree_Layer = createGraphics(width, height);
+  reboundLayer = createGraphics(width, height);
   CircleRotate_Layer = createGraphics(width, height);
   CirclePaint_Layer = createGraphics(width, height);
   DrawShapeGrid_Layer = createGraphics(width, height);
@@ -18,10 +18,9 @@ p5.prototype.workshop_setup = (arg) => {
 };
 
 /* 各テンプレートのデータ */
-
-const data = {
+const store = {
+  rebound: [],
   drawShapeGrid_colors: [],
-  circle_free_circles: [],
   circle_paint_circles: [],
   circle_rotate_angle: 0,
   circle_rotate_radius: 250,
@@ -30,10 +29,83 @@ const data = {
   spiralSquares: [],
 };
 
+/* ユーティリティ */
+const rand01 = () => (random(0, 1) < 0.5 ? 1 : -1);
+
+/* テンプレート：図形がランダムに動き回って端で跳ね返る */
+p5.prototype.ws_rebound = (arg) => {
+  const num = arg.num || 5;
+  const opacity = (arg.opacity ?? 1) * 255;
+  const cols = arg.cols || [
+    color(252, 121, 121, opacity), // 赤
+    color(245, 158, 66, opacity), // オレンジ
+    color(126, 224, 201, opacity), // 緑
+    color(145, 168, 235, opacity), // 青
+    color(139, 55, 191, opacity), // 紫
+    color(252, 249, 179, opacity), // 黄色
+    color(255, 105, 180, opacity), // ピンク
+  ];
+
+  // 初回呼び出しのみ初期設定
+  // 本当は随時変更できるようにしたい
+  if (store.rebound.length === 0) {
+    let size, vel;
+    for (let i = 0; i < num; i += 1) {
+      if (Array.isArray(arg.size)) {
+        size = floor(random(arg.size[0], arg.size[1] + 1));
+      } else {
+        size = arg.size ?? floor(random(20, 81));
+      }
+      if (Array.isArray(arg.speed)) {
+        vel = floor(random(arg.speed[0], arg.speed[1] + 1));
+      } else {
+        vel = arg.speed || floor(random(3, 9));
+      }
+
+      store.rebound.push({
+        size: size,
+        x: random(width - size),
+        y: random(height - size),
+        R: arg.R ?? size / 2,
+        col: cols[i % cols.length],
+        vx: rand01() * vel,
+        vy: rand01() * vel,
+      });
+    }
+  }
+
+  // レイヤー設定
+  // reboundLayer.push();
+  reboundLayer.clear();
+  reboundLayer.noStroke();
+
+  const shapes = store.rebound;
+
+  // 図形の描画
+  for (let s of shapes) {
+    s.x += s.vx;
+    s.y += s.vy;
+
+    if (s.x > width - s.size || s.x < 0) {
+      s.vx *= -1;
+    }
+    if (s.y > height - s.size || s.y < 0) {
+      s.vy *= -1;
+    }
+
+    reboundLayer.fill(s.col);
+    reboundLayer.square(s.x, s.y, s.size, s.R);
+  }
+
+  // レイヤー書き出し
+  image(reboundLayer, 0, 0);
+  // reboundLayer.pop();
+};
+
 /* テンプレート：図形を円運動させる */
 p5.prototype.drawSpiralSquares = (arg) => {
   // 初回のみ初期化
-  if (data.spiralSquares.length === 0) {
+  if (store.spiralSquares.length === 0) {
     const num = arg.num || 4;
     const size = arg.size || 30;
     const speed = arg.speed || 0.05;
@@ -48,7 +120,7 @@ p5.prototype.drawSpiralSquares = (arg) => {
     // 各四角形の初期角度と中心位置を設定
     for (let i = 0; i < num; i++) {
       const angle = (TWO_PI / num) * i; // 各四角形の初期角度
-      data.spiralSquares.push({
+      store.spiralSquares.push({
         x: width / 2, // 中心から始める
         y: height / 2,
         color: colors[i % colors.length],
@@ -62,7 +134,7 @@ p5.prototype.drawSpiralSquares = (arg) => {
   }
 
   SpiralSquares_Layer.clear();
-  for (let square of data.spiralSquares) {
+  for (let square of store.spiralSquares) {
     // 中心を基点にスパイラル移動
     const spiralRadius = width / 2 - square.step * 0.5; // 半径を減少させながらスパイラル状に描画
     square.x = width / 2 + cos(square.angle) * spiralRadius;
@@ -106,7 +178,7 @@ p5.prototype.drawRandomSquares = (arg) => {
     const squareSize = random(minSize, maxSize); // サイズをランダムに
     const squareX = random(width);
     const squareY = random(height);
-    data.randomSquares.push({
+    store.randomSquares.push({
       x: squareX,
       y: squareY,
       size: squareSize,
@@ -118,7 +190,7 @@ p5.prototype.drawRandomSquares = (arg) => {
   RandomSquares_Layer.clear();
 
   // 四角形の描画
-  for (let square of data.randomSquares) {
+  for (let square of store.randomSquares) {
     RandomSquares_Layer.fill(square.color); // 正しい色プロパティにアクセス
     RandomSquares_Layer.noStroke();
     RandomSquares_Layer.square(square.x, square.y, square.size, bl);
@@ -126,63 +198,6 @@ p5.prototype.drawRandomSquares = (arg) => {
 
   // メインキャンバスに描画
   image(RandomSquares_Layer, 0, 0);
-};
-
-/* テンプレート：図形をランダムに動き回らせる（跳ね返る） */
-p5.prototype.circle_free = (arg) => {
-  const num = arg.num || 7; //最大7
-  const r = arg.r || 150;
-  const vx = arg.vx || random(-3, 3);
-  const vy = arg.vy || random(-3, 3);
-  const bl = arg.bl || 100;
-
-  CircleFree_Layer.push();
-  CircleFree_Layer.clear();
-  CircleFree_Layer.noStroke();
-
-  const baseColors = arg.baseColors || [
-    color(255, 0, 0, 60), // 赤
-    color(245, 158, 66, 60), // オレンジ
-    color(0, 255, 0, 60), // 緑
-    color(0, 0, 255, 60), // 青
-    color(139, 55, 191, 60), // 紫
-    color(255, 255, 0, 60), // 黄色
-    color(255, 0, 255, 60), // ピンク
-  ];
-
-  if (data.circle_free_circles.length === 0) {
-    // 各円の初期設定をランダムに行う
-    for (let i = 0; i < num; i++) {
-      data.circle_free_circles.push({
-        x: random(width),
-        y: random(height),
-        r: r,
-        color: baseColors[i % baseColors.length],
-        vx: vx, // x方向の速度
-        vy: vy, // y方向の速度
-      });
-    }
-  }
-
-  const circles = data.circle_free_circles;
-
-  for (let en of circles) {
-    en.x += en.vx;
-    en.y += en.vy;
-
-    if (en.x > width || en.x < 0) {
-      en.vx *= -1;
-    }
-    if (en.y > height || en.y < 0) {
-      en.vy *= -1;
-    }
-
-    CircleFree_Layer.fill(en.color);
-    CircleFree_Layer.square(en.x, en.y, en.r, bl); //四角形 ⇄ 円へと変更可
-  }
-
-  CircleFree_Layer.pop();
-  image(CircleFree_Layer, 0, 0);
 };
 
 /* テンプレート：1個の図形をスパイラル運動させる */
@@ -213,36 +228,36 @@ p5.prototype.circle_rotate = (arg) => {
   const maxRadius = maxRad; // 最大半径
 
   // 初期色の設定
-  if (data.circle_rotate_currentColor === null) {
-    data.circle_rotate_currentColor = random(baseColors);
+  if (store.circle_rotate_currentColor === null) {
+    store.circle_rotate_currentColor = random(baseColors);
   }
 
   // 円の色を60フレームごとに変更
   if (frameCount % col === 0) {
-    data.circle_rotate_currentColor = random(baseColors);
+    store.circle_rotate_currentColor = random(baseColors);
   }
 
   // 円を中心に描く
   CircleRotate_Layer.translate(width / 2, height / 2);
-  CircleRotate_Layer.fill(data.circle_rotate_currentColor);
+  CircleRotate_Layer.fill(store.circle_rotate_currentColor);
 
   // 円の位置計算
-  let x = data.circle_rotate_radius * cos(data.circle_rotate_angle);
-  let y = data.circle_rotate_radius * sin(data.circle_rotate_angle);
+  let x = store.circle_rotate_radius * cos(store.circle_rotate_angle);
+  let y = store.circle_rotate_radius * sin(store.circle_rotate_angle);
 
   // 円を描画
   CircleRotate_Layer.square(x, y, r, bl); //四角形⇄円へと変更可,40,10
   // ellipse(x, y, 50, 50);
 
   // 半径を縮めて、回転を進める
-  data.circle_rotate_radius -= radiusDecrement;
-  data.circle_rotate_angle += speed;
+  store.circle_rotate_radius -= radiusDecrement;
+  store.circle_rotate_angle += speed;
 
   // 半径が小さくなりすぎたらリセット
-  if (data.circle_rotate_radius < minRadius) {
-    data.circle_rotate_radius = maxRadius;
-    data.circle_rotate_angle = 0;
-    data.circle_rotate_currentColor = random(baseColors);
+  if (store.circle_rotate_radius < minRadius) {
+    store.circle_rotate_radius = maxRadius;
+    store.circle_rotate_angle = 0;
+    store.circle_rotate_currentColor = random(baseColors);
   }
 
   CircleRotate_Layer.pop();
@@ -250,6 +265,8 @@ p5.prototype.circle_rotate = (arg) => {
 };
 
 /*circle_paint（円で塗りつぶす）*/
+// ランダムに表示して消える…というのがない
+// 大きさの指定ができない
 p5.prototype.circle_paint = (arg) => {
   const num = arg.num || 4;
   const r = arg.r || 85;
@@ -263,9 +280,9 @@ p5.prototype.circle_paint = (arg) => {
     color(252, 249, 179), // 黄色
   ];
 
-  if (data.circle_paint_circles.length === 0) {
+  if (store.circle_paint_circles.length === 0) {
     for (let i = 0; i < num; i++) {
-      data.circle_paint_circles.push({
+      store.circle_paint_circles.push({
         x: random(width),
         y: random(height),
         r: r,
@@ -276,7 +293,7 @@ p5.prototype.circle_paint = (arg) => {
     }
   }
 
-  const circles = data.circle_paint_circles;
+  const circles = store.circle_paint_circles;
 
   CirclePaint_Layer.clear(); // 描画のリセット
   CirclePaint_Layer.noStroke();
@@ -327,13 +344,13 @@ p5.prototype.drawShapeGrid = (arg) => {
   const xStep = width / cols;
   const yStep = height / rows;
 
-  if (data.drawShapeGrid_colors.length == 0) {
+  if (store.drawShapeGrid_colors.length == 0) {
     for (let i = 0; i < cols * rows; i++) {
-      data.drawShapeGrid_colors.push(random(baseColors));
+      store.drawShapeGrid_colors.push(random(baseColors));
     }
   }
 
-  const colors = data.drawShapeGrid_colors;
+  const colors = store.drawShapeGrid_colors;
 
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {

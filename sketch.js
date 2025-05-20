@@ -14,16 +14,17 @@ function setup() {
 
 function draw() {
   // 背景を白く塗りつぶす
-  background(255);
+  background(220);
 
   // SECは開始からの秒数
   const SEC = floor(frameCount / FPS);
-
+  ws_rebound({ num: 10, size: [10, 50], R: 0 });
   // 開始から5秒未満まで
   if (SEC < 5) {
   }
   // 開始5秒から20秒未満まで
   else if (SEC < 20) {
+    //図形ごとに
   }
   // 開始20秒から30秒未満まで
   else if (SEC < 30) {
