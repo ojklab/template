@@ -7,7 +7,7 @@ function preload() {
 
 function setup() {
   createCanvas(400, 400);
-  workshop_setup();
+  ws_setup();
   // sound.play();
   frameRate(FPS);
 }
@@ -18,7 +18,7 @@ function draw() {
 
   // SECは開始からの秒数
   const SEC = floor(frameCount / FPS);
-  ws_rebound({ num: 10, size: [10, 50], R: 0 });
+  ws_rebound({ num: 20, size: [10, 50], R: 0, opacity: 0.5 });
   // 開始から5秒未満まで
   if (SEC < 5) {
   }

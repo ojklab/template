@@ -1,5 +1,21 @@
 'use strict';
 
+/*
+ * 使い方の基本：
+ * - sketch.jsのsetup()の中で ws_setup(); を呼び出す
+ * - すべてデフォルトで動かすときも空のオブジェクトが必要 ws_function({});
+ * - 同じテンプレート関数の引数を途中で変更しても変化しない
+ *
+ * 引数：
+ * num    : 図形の数（グリッドは1辺の数、スパイラルにはない）
+ * size   : 図形の1辺あるいは直径の長さ
+ * speed  : 図形の移動／変化速度
+ * cols   : [color(R,G,B), color(R,G,B), ...] の形式で複数指定可
+ * opacity: 不透明度（0.0-1.0）
+ * R      : 角丸の大きさ（既定値は円で、0を指定すると四角）
+ * ※sizeとspeedでは [最小値, 最大値] の形式で乱数が使える
+ */
+
 /* 各テンプレートのレイヤー */
 let reboundLayer;
 let CircleRotate_Layer;
@@ -8,7 +24,7 @@ let DrawShapeGrid_Layer;
 let RandomSquares_Layer;
 let SpiralSquares_Layer;
 
-p5.prototype.workshop_setup = (arg) => {
+p5.prototype.ws_setup = (arg) => {
   reboundLayer = createGraphics(width, height);
   CircleRotate_Layer = createGraphics(width, height);
   CirclePaint_Layer = createGraphics(width, height);
@@ -32,22 +48,21 @@ const store = {
 /* ユーティリティ */
 const rand01 = () => (random(0, 1) < 0.5 ? 1 : -1);
 
-/* テンプレート：図形がランダムに動き回って端で跳ね返る */
+/* リバウンド：図形がランダムに動き回って端で跳ね返る */
 p5.prototype.ws_rebound = (arg) => {
   const num = arg.num || 5;
-  const opacity = (arg.opacity ?? 1) * 255;
   const cols = arg.cols || [
-    color(252, 121, 121, opacity), // 赤
-    color(245, 158, 66, opacity), // オレンジ
-    color(126, 224, 201, opacity), // 緑
-    color(145, 168, 235, opacity), // 青
-    color(139, 55, 191, opacity), // 紫
-    color(252, 249, 179, opacity), // 黄色
-    color(255, 105, 180, opacity), // ピンク
+    color(252, 121, 121), // 赤
+    color(245, 158, 66), // オレンジ
+    color(126, 224, 201), // 緑
+    color(145, 168, 235), // 青
+    color(139, 55, 191), // 紫
+    color(252, 249, 179), // 黄色
+    color(255, 105, 180), // ピンク
   ];
+  const opacity = (arg.opacity ?? 1) * 255;
 
   // 初回呼び出しのみ初期設定
-  // 本当は随時変更できるようにしたい
   if (store.rebound.length === 0) {
     let size, vel;
     for (let i = 0; i < num; i += 1) {
@@ -59,15 +74,18 @@ p5.prototype.ws_rebound = (arg) => {
       if (Array.isArray(arg.speed)) {
         vel = floor(random(arg.speed[0], arg.speed[1] + 1));
       } else {
-        vel = arg.speed || floor(random(3, 9));
+        vel = arg.speed || floor(random(2, 6));
       }
+
+      const col = cols[i % cols.length];
+      col.setAlpha(opacity);
 
       store.rebound.push({
         size: size,
         x: random(width - size),
         y: random(height - size),
         R: arg.R ?? size / 2,
-        col: cols[i % cols.length],
+        col: col,
         vx: rand01() * vel,
         vy: rand01() * vel,
       });
