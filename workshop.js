@@ -18,19 +18,17 @@
 
 /* 各テンプレートのレイヤー */
 let reboundLayer;
-let CircleRotate_Layer;
-let CirclePaint_Layer;
-let DrawShapeGrid_Layer;
-let RandomSquares_Layer;
-let SpiralSquares_Layer;
+let pulseLayer;
+let whirlLayer;
+let spiralLayer;
+let gridLayer;
 
 p5.prototype.ws_setup = (arg) => {
   reboundLayer = createGraphics(width, height);
-  CircleRotate_Layer = createGraphics(width, height);
-  CirclePaint_Layer = createGraphics(width, height);
-  DrawShapeGrid_Layer = createGraphics(width, height);
-  RandomSquares_Layer = createGraphics(width, height);
-  SpiralSquares_Layer = createGraphics(width, height);
+  pulseLayer = createGraphics(width, height);
+  whirlLayer = createGraphics(width, height);
+  spiralLayer = createGraphics(width, height);
+  gridLayer = createGraphics(width, height);
 };
 
 /* 各テンプレートのデータ */
@@ -48,7 +46,7 @@ const store = {
 /* ユーティリティ */
 const rand01 = () => (random(0, 1) < 0.5 ? 1 : -1);
 
-/* リバウンド：図形がランダムに動き回って端で跳ね返る */
+/* 跳ね返り（リバウンド）：図形がランダムに動き回って端で跳ね返る */
 p5.prototype.ws_rebound = (arg) => {
   const num = arg.num || 5;
   const cols = arg.cols || [
@@ -120,7 +118,7 @@ p5.prototype.ws_rebound = (arg) => {
   // reboundLayer.pop();
 };
 
-/* テンプレート：図形を円運動させる */
+/* 回転（ウィール）：複数の図形が円を描いて回転する */
 p5.prototype.drawSpiralSquares = (arg) => {
   // 初回のみ初期化
   if (store.spiralSquares.length === 0) {
@@ -179,7 +177,7 @@ p5.prototype.drawSpiralSquares = (arg) => {
   image(SpiralSquares_Layer, 0, 0);
 };
 
-/* テンプレート：図形をランダムに出現させる */
+/* パルス：図形がランダムに出現して消える */
 p5.prototype.drawRandomSquares = (arg) => {
   const baseColors = arg.baseColors || [
     color(150, 200, 250),
@@ -218,7 +216,7 @@ p5.prototype.drawRandomSquares = (arg) => {
   image(RandomSquares_Layer, 0, 0);
 };
 
-/* テンプレート：1個の図形をスパイラル運動させる */
+/* スパイラル：図形（1個）が円を描きながら中心にいく */
 p5.prototype.circle_rotate = (arg) => {
   const spd = arg.spd || 0.02;
   const radiusDec = arg.radiusDec || 0.2;
@@ -282,59 +280,7 @@ p5.prototype.circle_rotate = (arg) => {
   image(CircleRotate_Layer, 0, 0);
 };
 
-/*circle_paint（円で塗りつぶす）*/
-// ランダムに表示して消える…というのがない
-// 大きさの指定ができない
-p5.prototype.circle_paint = (arg) => {
-  const num = arg.num || 4;
-  const r = arg.r || 85;
-  const vx = arg.vx || random(-2.5, 2.5);
-  const vy = arg.vy || random(-2.5, 2.5);
-  const bl = arg.bl || 40;
-  const baseColors = arg.baseColors || [
-    color(252, 121, 121), // 赤
-    color(126, 224, 201), // 緑
-    color(145, 168, 235), // 青
-    color(252, 249, 179), // 黄色
-  ];
-
-  if (store.circle_paint_circles.length === 0) {
-    for (let i = 0; i < num; i++) {
-      store.circle_paint_circles.push({
-        x: random(width),
-        y: random(height),
-        r: r,
-        color: baseColors[i % baseColors.length],
-        vx: vx,
-        vy: vy,
-      });
-    }
-  }
-
-  const circles = store.circle_paint_circles;
-
-  CirclePaint_Layer.clear(); // 描画のリセット
-  CirclePaint_Layer.noStroke();
-
-  for (let en of circles) {
-    en.x += en.vx;
-    en.y += en.vy;
-
-    if (en.x > width || en.x < 0) {
-      en.vx *= -1;
-    }
-    if (en.y > height || en.y < 0) {
-      en.vy *= -1;
-    }
-
-    CirclePaint_Layer.fill(en.color);
-    CirclePaint_Layer.square(en.x, en.y, en.r, bl);
-  }
-
-  image(CirclePaint_Layer, 0, 0); // メインキャンバスに描画
-};
-
-/* テンプレート：図形をグリッドに敷き詰める */
+/* グリッド：敷き詰めた図形の色などが変化する */
 p5.prototype.drawShapeGrid = (arg) => {
   const cols = arg.cols || 5;
   const rows = arg.rows || 5;
@@ -390,4 +336,4 @@ p5.prototype.drawShapeGrid = (arg) => {
   image(DrawShapeGrid_Layer, 0, 0);
 };
 
-/* テンプレート：直線を任意の角度で動かす */
+/* ライン：直線を任意の角度で動かす */
