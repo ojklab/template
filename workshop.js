@@ -23,33 +23,22 @@ let whirlLayer;
 let spiralLayer;
 let gridLayer;
 
+let defaultCols;
+
+/* 定数 */
+const PULSE_MINSIZE = 2; // 未満でリセット
+
+/* 初期設定 */
 p5.prototype.ws_setup = (arg) => {
+  // レイヤー
   reboundLayer = createGraphics(width, height);
   pulseLayer = createGraphics(width, height);
   whirlLayer = createGraphics(width, height);
   spiralLayer = createGraphics(width, height);
   gridLayer = createGraphics(width, height);
-};
 
-/* 各テンプレートのデータ */
-const store = {
-  rebound: [],
-  drawShapeGrid_colors: [],
-  circle_paint_circles: [],
-  circle_rotate_angle: 0,
-  circle_rotate_radius: 250,
-  circle_rotate_currentColor: null,
-  randomSquares: [],
-  spiralSquares: [],
-};
-
-/* ユーティリティ */
-const rand01 = () => (random(0, 1) < 0.5 ? 1 : -1);
-
-/* 跳ね返り（リバウンド）：図形がランダムに動き回って端で跳ね返る */
-p5.prototype.ws_rebound = (arg) => {
-  const num = arg.num || 5;
-  const cols = arg.cols || [
+  // 規定の色セット
+  defaultCols = [
     color(252, 121, 121), // 赤
     color(245, 158, 66), // オレンジ
     color(126, 224, 201), // 緑
@@ -58,9 +47,34 @@ p5.prototype.ws_rebound = (arg) => {
     color(252, 249, 179), // 黄色
     color(255, 105, 180), // ピンク
   ];
+};
+
+/* 各テンプレートのデータ */
+const store = {
+  rebound: [],
+  pulse: [],
+  whirl: [],
+  spiral: [],
+  spiralDate: {
+    angle: 0,
+    radius: 250,
+    currentCol: null,
+  },
+  grid: [],
+};
+
+/* ユーティリティ */
+const rand01 = () => (random(0, 1) < 0.5 ? 1 : -1);
+const ws_reset = (tmpl) => (store[tmpl] = []);
+
+/* リバウンド：図形がランダムに動き回って端で跳ね返る */
+/* 引数： num, size, R, speed, cols, opacity */
+p5.prototype.ws_rebound = (arg) => {
+  const num = arg.num || 5;
+  const cols = arg.cols || defaultCols;
   const opacity = (arg.opacity ?? 1) * 255;
 
-  // 初回呼び出しのみ初期設定
+  // 初期設定
   if (store.rebound.length === 0) {
     let size, vel;
     for (let i = 0; i < num; i += 1) {
@@ -90,15 +104,12 @@ p5.prototype.ws_rebound = (arg) => {
     }
   }
 
-  // レイヤー設定
-  // reboundLayer.push();
+  // 図形の描画
+  reboundLayer.push();
   reboundLayer.clear();
   reboundLayer.noStroke();
 
-  const shapes = store.rebound;
-
-  // 図形の描画
-  for (let s of shapes) {
+  for (let s of store.rebound) {
     s.x += s.vx;
     s.y += s.vy;
 
@@ -114,29 +125,85 @@ p5.prototype.ws_rebound = (arg) => {
   }
 
   // レイヤー書き出し
+  reboundLayer.pop();
   image(reboundLayer, 0, 0);
-  // reboundLayer.pop();
+};
+
+/* パルス：図形がランダムに出現して消える */
+/* 引数： num, size, R, speed, cols, opacity */
+p5.prototype.ws_pulse = (arg) => {
+  const num = arg.num || 10;
+  const cols = arg.cols || defaultCols;
+  const opacity = (arg.opacity ?? 1) * 255;
+
+  // 初期設定
+  if (store.pulse.length === 0) {
+    let size, vel;
+    for (let i = 0; i < num; i += 1) {
+      if (Array.isArray(arg.size)) {
+        size = floor(random(arg.size[0], arg.size[1] + 1));
+      } else {
+        size = arg.size ?? floor(random(20, 81));
+      }
+      if (Array.isArray(arg.speed)) {
+        vel = floor(random(arg.speed[0], arg.speed[1] + 1));
+      } else {
+        vel = arg.speed || floor(random(1, 3));
+      }
+
+      const col = cols[i % cols.length];
+      col.setAlpha(opacity);
+
+      store.pulse.push({
+        size: size,
+        orgSize: size,
+        x: random(size / 2, width - size / 2),
+        y: random(size / 2, height - size / 2),
+        R: arg.R ?? size / 2,
+        col: col,
+        vel: vel,
+      });
+    }
+  }
+
+  // 図形の描画
+  pulseLayer.push();
+  pulseLayer.clear();
+  pulseLayer.noStroke();
+  pulseLayer.rectMode(CENTER);
+
+  for (let n = 0; n < store.pulse.length; n += 1) {
+    const s = store.pulse[n];
+    pulseLayer.fill(s.col);
+    pulseLayer.square(s.x, s.y, s.size, s.R);
+    s.size -= s.vel;
+    if (s.size < PULSE_MINSIZE) {
+      const r = s.orgSize / 2;
+      store.pulse[n].size = s.orgSize;
+      store.pulse[n].x = random(r, width - r);
+      store.pulse[n].y = random(r, height - r);
+    }
+  }
+
+  // メインキャンバスに描画
+  pulseLayer.pop();
+  image(pulseLayer, 0, 0);
 };
 
 /* 回転（ウィール）：複数の図形が円を描いて回転する */
-p5.prototype.drawSpiralSquares = (arg) => {
+p5.prototype.ws_whirl = (arg) => {
   // 初回のみ初期化
-  if (store.spiralSquares.length === 0) {
+  if (store.whirl.length === 0) {
     const num = arg.num || 4;
     const size = arg.size || 30;
     const speed = arg.speed || 0.05;
     const bl = arg.bl || 0;
-    const colors = arg.colors || [
-      color(252, 121, 121),
-      color(126, 224, 201),
-      color(145, 168, 235),
-      color(252, 249, 179),
-    ];
+    const colors = arg.colors || defaultCols;
 
     // 各四角形の初期角度と中心位置を設定
     for (let i = 0; i < num; i++) {
       const angle = (TWO_PI / num) * i; // 各四角形の初期角度
-      store.spiralSquares.push({
+      store.whirl.push({
         x: width / 2, // 中心から始める
         y: height / 2,
         color: colors[i % colors.length],
@@ -149,75 +216,33 @@ p5.prototype.drawSpiralSquares = (arg) => {
     }
   }
 
-  SpiralSquares_Layer.clear();
-  for (let square of store.spiralSquares) {
+  whirl.clear();
+  for (let s of store.whirl) {
     // 中心を基点にスパイラル移動
-    const spiralRadius = width / 2 - square.step * 0.5; // 半径を減少させながらスパイラル状に描画
-    square.x = width / 2 + cos(square.angle) * spiralRadius;
-    square.y = height / 2 + sin(square.angle) * spiralRadius;
+    const spiralRadius = width / 2 - s.step * 0.5; // 半径を減少させながらスパイラル状に描画
+    s.x = width / 2 + cos(s.angle) * spiralRadius;
+    s.y = height / 2 + sin(s.angle) * spiralRadius;
 
-    SpiralSquares_Layer.fill(square.color);
-    SpiralSquares_Layer.noStroke();
-    SpiralSquares_Layer.square(
-      square.x - square.size / 2,
-      square.y - square.size / 2,
-      square.size,
-      square.bl
-    );
+    whirlLayer.push();
+    whirlLayer.fill(s.color);
+    whirlLayer.noStroke();
+    whirlLayer.s(s.x - s.size / 2, s.y - s.size / 2, s.size, s.bl);
 
-    square.angle += square.speed; // 角度を変化させて回転
-    square.step += 1; // スパイラルの進行
+    s.angle += s.speed; // 角度を変化させて回転
+    s.step += 1; // スパイラルの進行
 
     // スパイラルが外側に達したらリセット
     if (spiralRadius <= 0) {
-      square.step = 0;
+      s.step = 0;
     }
   }
 
-  image(SpiralSquares_Layer, 0, 0);
-};
-
-/* パルス：図形がランダムに出現して消える */
-p5.prototype.drawRandomSquares = (arg) => {
-  const baseColors = arg.baseColors || [
-    color(150, 200, 250),
-    color(150, 172, 250),
-    color(165, 150, 250),
-  ];
-  const minSize = arg.minSize || 10;
-  const maxSize = arg.maxSize || 50;
-  const speed = arg.speed || 30;
-  const bl = arg.bl || 0;
-
-  // 出現制御
-  if (frameCount % speed === 0) {
-    const squareSize = random(minSize, maxSize); // サイズをランダムに
-    const squareX = random(width);
-    const squareY = random(height);
-    store.randomSquares.push({
-      x: squareX,
-      y: squareY,
-      size: squareSize,
-      color: random(baseColors), // ランダムな色を指定
-    });
-  }
-
-  // レイヤーのリセット
-  RandomSquares_Layer.clear();
-
-  // 四角形の描画
-  for (let square of store.randomSquares) {
-    RandomSquares_Layer.fill(square.color); // 正しい色プロパティにアクセス
-    RandomSquares_Layer.noStroke();
-    RandomSquares_Layer.square(square.x, square.y, square.size, bl);
-  }
-
-  // メインキャンバスに描画
-  image(RandomSquares_Layer, 0, 0);
+  whirlLayer.pop();
+  image(Spiralss_Layer, 0, 0);
 };
 
 /* スパイラル：図形（1個）が円を描きながら中心にいく */
-p5.prototype.circle_rotate = (arg) => {
+p5.prototype.ws_spiral = (arg) => {
   const spd = arg.spd || 0.02;
   const radiusDec = arg.radiusDec || 0.2;
   const minRad = arg.minRad || 10;
@@ -227,9 +252,9 @@ p5.prototype.circle_rotate = (arg) => {
   const bl = arg.bl || 10; //角の丸さ
 
   // const g = circle_rotate_pg;
-  CircleRotate_Layer.push();
-  CircleRotate_Layer.clear();
-  CircleRotate_Layer.noStroke();
+  spiralLayer.push();
+  spiralLayer.clear();
+  spiralLayer.noStroke();
 
   const baseColors = [
     color(252, 121, 121), // 赤系
@@ -244,77 +269,72 @@ p5.prototype.circle_rotate = (arg) => {
   const maxRadius = maxRad; // 最大半径
 
   // 初期色の設定
-  if (store.circle_rotate_currentColor === null) {
+  if (store.spiralData.currentColor === null) {
     store.circle_rotate_currentColor = random(baseColors);
   }
 
   // 円の色を60フレームごとに変更
   if (frameCount % col === 0) {
-    store.circle_rotate_currentColor = random(baseColors);
+    store.spiralData.currentColor = random(baseColors);
   }
 
   // 円を中心に描く
-  CircleRotate_Layer.translate(width / 2, height / 2);
-  CircleRotate_Layer.fill(store.circle_rotate_currentColor);
+  spiralLayer.translate(width / 2, height / 2);
+  spiralLayer.fill(store.spiralData.currentColor);
 
   // 円の位置計算
-  let x = store.circle_rotate_radius * cos(store.circle_rotate_angle);
-  let y = store.circle_rotate_radius * sin(store.circle_rotate_angle);
+  let x = store.spiralData.radius * cos(store.spiralData.angle);
+  let y = store.spiralData.radius * sin(store.spiralData.angle);
 
   // 円を描画
-  CircleRotate_Layer.square(x, y, r, bl); //四角形⇄円へと変更可,40,10
+  spiralLayer.square(x, y, r, bl); //四角形⇄円へと変更可,40,10
   // ellipse(x, y, 50, 50);
 
   // 半径を縮めて、回転を進める
-  store.circle_rotate_radius -= radiusDecrement;
-  store.circle_rotate_angle += speed;
+  store.spiralData.radius -= radiusDecrement;
+  store.spiralData.angle += speed;
 
   // 半径が小さくなりすぎたらリセット
-  if (store.circle_rotate_radius < minRadius) {
-    store.circle_rotate_radius = maxRadius;
-    store.circle_rotate_angle = 0;
-    store.circle_rotate_currentColor = random(baseColors);
+  if (store.spiralData.radius < minRadius) {
+    store.spiralData.radius = maxRadius;
+    store.spiralData.angle = 0;
+    store.spiralData.currentColor = random(baseColors);
   }
 
-  CircleRotate_Layer.pop();
-  image(CircleRotate_Layer, 0, 0);
+  spiralLayer.pop();
+  image(spiralLayer, 0, 0);
 };
 
 /* グリッド：敷き詰めた図形の色などが変化する */
-p5.prototype.drawShapeGrid = (arg) => {
+p5.prototype.ws_grid = (arg) => {
   const cols = arg.cols || 5;
   const rows = arg.rows || 5;
   const shapeSize = arg.shapeSize || 50;
   const cornerRadius = arg.cornerRadius || 0;
-  const baseColors = arg.colors || [
-    color(252, 121, 121),
-    color(126, 224, 201),
-    color(145, 168, 235),
-    color(252, 249, 179),
-  ];
+  const baseColors = arg.colors || defaultCols;
   const colorChangeSpeed = arg.colorChangeSpeed || 30;
   const useStroke = arg.stroke !== undefined ? arg.stroke : true;
   const randomizeColor =
     arg.randomizeColor !== undefined ? arg.randomizeColor : false;
 
-  DrawShapeGrid_Layer.push();
+  gridLayer.push();
 
   if (useStroke) {
-    DrawShapeGrid_Layer.stroke(0);
+    gridLayer.stroke(0);
   } else {
-    DrawShapeGrid_Layer.noStroke();
+    gridLayer.noStroke();
   }
 
   const xStep = width / cols;
   const yStep = height / rows;
 
-  if (store.drawShapeGrid_colors.length == 0) {
+  if (store.grid.length == 0) {
     for (let i = 0; i < cols * rows; i++) {
-      store.drawShapeGrid_colors.push(random(baseColors));
+      store.grid.push(random(baseColors));
     }
   }
 
-  const colors = store.drawShapeGrid_colors;
+  const colors = store.gridcolors;
 
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
@@ -326,14 +346,14 @@ p5.prototype.drawShapeGrid = (arg) => {
         colors[index] = random(baseColors);
       }
 
-      DrawShapeGrid_Layer.fill(colors[index]);
-      DrawShapeGrid_Layer.rectMode(CENTER);
-      DrawShapeGrid_Layer.square(posX, posY, shapeSize, cornerRadius);
+      gridLayer.fill(colors[index]);
+      gridLayer.rectMode(CENTER);
+      gridLayer.square(posX, posY, shapeSize, cornerRadius);
     }
   }
 
-  DrawShapeGrid_Layer.pop();
-  image(DrawShapeGrid_Layer, 0, 0);
+  gridLayer.pop();
+  image(gridLayer, 0, 0);
 };
 
 /* ライン：直線を任意の角度で動かす */

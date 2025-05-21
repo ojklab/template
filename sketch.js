@@ -18,12 +18,20 @@ function draw() {
 
   // SECは開始からの秒数
   const SEC = floor(frameCount / FPS);
-  ws_rebound({ num: 20, size: [10, 50], R: 0, opacity: 0.5 });
+
   // 開始から5秒未満まで
   if (SEC < 5) {
+    // ws_rebound({ num: 20, size: [10, 50], R: 0, opacity: 0.5 });
+    ws_pulse({ num: 30 });
   }
-  // 開始5秒から20秒未満まで
+  // 開始5秒後
+  else if (SEC == 5) {
+    ws_reset('rebound');
+    //図形ごとに
+  }
+  // 開始6秒から20秒未満まで
   else if (SEC < 20) {
+    ws_rebound({ num: 10, opacity: 0.9, speed: 10 });
     //図形ごとに
   }
   // 開始20秒から30秒未満まで
