@@ -55,7 +55,7 @@ const store = {
   pulse: [],
   whirl: [],
   spiral: [],
-  spiralDate: {
+  spiralData: {
     angle: 0,
     radius: 250,
     currentCol: null,
@@ -72,11 +72,10 @@ const ws_reset = (tmpl) => (store[tmpl] = []);
 p5.prototype.ws_rebound = (arg) => {
   const num = arg.num || 5;
   const cols = arg.cols || defaultCols;
-  const opacity = (arg.opacity ?? 1) * 255;
 
   // 初期設定
   if (store.rebound.length === 0) {
-    let size, vel;
+    let size, vel, opa;
     for (let i = 0; i < num; i += 1) {
       if (Array.isArray(arg.size)) {
         size = floor(random(arg.size[0], arg.size[1] + 1));
@@ -88,9 +87,14 @@ p5.prototype.ws_rebound = (arg) => {
       } else {
         vel = arg.speed || floor(random(2, 6));
       }
+      if (Array.isArray(arg.opacity)) {
+        opa = random(arg.opacity[0], arg.opacity[1]) * 255;
+      } else {
+        opa = (arg.opacity ?? 1) * 255;
+      }
 
       const col = cols[i % cols.length];
-      col.setAlpha(opacity);
+      col.setAlpha(opa); // 透過率は普遍
 
       store.rebound.push({
         size: size,
@@ -130,15 +134,16 @@ p5.prototype.ws_rebound = (arg) => {
 };
 
 /* パルス：図形がランダムに出現して消える */
-/* 引数： num, size, R, speed, cols, opacity */
+/* 引数： num, size, R, speed, mode, cols, opacity */
+/* mode: 'size', 'opacity' */
 p5.prototype.ws_pulse = (arg) => {
   const num = arg.num || 10;
+  const mode = arg.mode || 'size';
   const cols = arg.cols || defaultCols;
-  const opacity = (arg.opacity ?? 1) * 255;
 
   // 初期設定
   if (store.pulse.length === 0) {
-    let size, vel;
+    let size, vel, opa;
     for (let i = 0; i < num; i += 1) {
       if (Array.isArray(arg.size)) {
         size = floor(random(arg.size[0], arg.size[1] + 1));
@@ -148,15 +153,25 @@ p5.prototype.ws_pulse = (arg) => {
       if (Array.isArray(arg.speed)) {
         vel = floor(random(arg.speed[0], arg.speed[1] + 1));
       } else {
-        vel = arg.speed || floor(random(1, 3));
+        if (mode == 'size') {
+          vel = arg.speed || floor(random(1, 3));
+        } else {
+          vel = arg.speed || floor(random(5, 20));
+        }
+      }
+      if (Array.isArray(arg.opacity)) {
+        opa = random(arg.opacity[0], arg.opacity[1]) * 255;
+      } else {
+        opa = (arg.opacity ?? 1) * 255;
       }
 
       const col = cols[i % cols.length];
-      col.setAlpha(opacity);
 
       store.pulse.push({
         size: size,
         orgSize: size,
+        opa: opa,
+        orgOpa: opa,
         x: random(size / 2, width - size / 2),
         y: random(size / 2, height - size / 2),
         R: arg.R ?? size / 2,
@@ -174,14 +189,26 @@ p5.prototype.ws_pulse = (arg) => {
 
   for (let n = 0; n < store.pulse.length; n += 1) {
     const s = store.pulse[n];
+    const col = s.col;
+    col.setAlpha(s.opa);
     pulseLayer.fill(s.col);
     pulseLayer.square(s.x, s.y, s.size, s.R);
-    s.size -= s.vel;
-    if (s.size < PULSE_MINSIZE) {
-      const r = s.orgSize / 2;
-      store.pulse[n].size = s.orgSize;
-      store.pulse[n].x = random(r, width - r);
-      store.pulse[n].y = random(r, height - r);
+    if (mode == 'size') {
+      s.size -= s.vel;
+      if (s.size < PULSE_MINSIZE) {
+        const r = s.orgSize / 2;
+        store.pulse[n].size = s.orgSize;
+        store.pulse[n].x = random(r, width - r);
+        store.pulse[n].y = random(r, height - r);
+      }
+    } else if (mode == 'opacity') {
+      s.opa -= s.vel;
+      if (s.opa < 0) {
+        const r = s.orgSize / 2;
+        store.pulse[n].opa = s.orgOpa;
+        store.pulse[n].x = random(r, width - r);
+        store.pulse[n].y = random(r, height - r);
+      }
     }
   }
 
