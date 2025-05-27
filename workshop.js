@@ -7,13 +7,13 @@
  * - 同じテンプレート関数の引数を途中で変更しても変化しない
  *
  * 引数：
- * num    : 図形の数（グリッドは1辺の数、スパイラルにはない）
- * size   : 図形の1辺あるいは直径の長さ
- * speed  : 図形の移動／変化速度
+ * num    : 図形の数（グリッドは1辺の数、スパイラルには不要）
+ * size   : 図形の1辺あるいは直径の長さ（既定値はランダム）
+ * R      : 角丸の比率（0→1.0で四角→円へ／既定値は1.0）
+ * speed  : 図形の移動／変化の速度（既定値はランダム）
  * cols   : [color(R,G,B), color(R,G,B), ...] の形式で複数指定可
- * opacity: 不透明度（0.0-1.0）
- * R      : 角丸の大きさ（既定値は円で、0を指定すると四角）
- * ※sizeとspeedでは [最小値, 最大値] の形式で乱数が使える
+ * opacity: 不透明度（0.0→1.0で不透明へ／既定値は1.0）
+ * ※num以外は[最小値, 最大値]の形式で乱数（ランダム）が使える
  */
 
 /* 各テンプレートのレイヤー */
@@ -27,26 +27,18 @@ let defaultCols;
 
 /* 定数 */
 const PULSE_MINSIZE = 2; // 未満でリセット
+let HALF_W, HALF_H;
 
-/* 初期設定 */
+/* レイヤー設定 */
 p5.prototype.ws_setup = (arg) => {
-  // レイヤー
   reboundLayer = createGraphics(width, height);
   pulseLayer = createGraphics(width, height);
   whirlLayer = createGraphics(width, height);
   spiralLayer = createGraphics(width, height);
   gridLayer = createGraphics(width, height);
 
-  // 規定の色セット
-  defaultCols = [
-    color(252, 121, 121), // 赤
-    color(245, 158, 66), // オレンジ
-    color(126, 224, 201), // 緑
-    color(145, 168, 235), // 青
-    color(139, 55, 191), // 紫
-    color(252, 249, 179), // 黄色
-    color(255, 105, 180), // ピンク
-  ];
+  HALF_W = width / 2;
+  HALF_H = height / 2;
 };
 
 /* 各テンプレートのデータ */
@@ -70,17 +62,30 @@ const ws_reset = (tmpl) => (store[tmpl] = []);
 /* リバウンド：図形がランダムに動き回って端で跳ね返る */
 /* 引数： num, size, R, speed, cols, opacity */
 p5.prototype.ws_rebound = (arg) => {
-  const num = arg.num || 5;
-  const cols = arg.cols || defaultCols;
-
   // 初期設定
   if (store.rebound.length === 0) {
-    let size, vel, opa;
+    const num = arg.num || 5;
+    const cols = arg.cols || [
+      color(252, 121, 121),
+      color(245, 158, 66),
+      color(126, 224, 201),
+      color(145, 168, 235),
+      color(139, 55, 191),
+      color(252, 249, 179),
+      color(255, 105, 180),
+    ];
+
+    let size, R, vel, opa;
     for (let i = 0; i < num; i += 1) {
       if (Array.isArray(arg.size)) {
         size = floor(random(arg.size[0], arg.size[1] + 1));
       } else {
         size = arg.size ?? floor(random(20, 81));
+      }
+      if (Array.isArray(arg.R)) {
+        R = random(arg.R[0], arg.R[1]) * (size / 2);
+      } else {
+        R = (arg.R ?? 1.0) * (size / 2);
       }
       if (Array.isArray(arg.speed)) {
         vel = floor(random(arg.speed[0], arg.speed[1] + 1));
@@ -94,13 +99,13 @@ p5.prototype.ws_rebound = (arg) => {
       }
 
       const col = cols[i % cols.length];
-      col.setAlpha(opa); // 透過率は普遍
+      col.setAlpha(opa);
 
       store.rebound.push({
         size: size,
         x: random(width - size),
         y: random(height - size),
-        R: arg.R ?? size / 2,
+        R: R,
         col: col,
         vx: rand01() * vel,
         vy: rand01() * vel,
@@ -137,18 +142,32 @@ p5.prototype.ws_rebound = (arg) => {
 /* 引数： num, size, R, speed, mode, cols, opacity */
 /* mode: 'size', 'opacity' */
 p5.prototype.ws_pulse = (arg) => {
-  const num = arg.num || 10;
   const mode = arg.mode || 'size';
-  const cols = arg.cols || defaultCols;
 
   // 初期設定
   if (store.pulse.length === 0) {
-    let size, vel, opa;
+    const num = arg.num || 10;
+    const cols = arg.cols || [
+      color(252, 121, 121),
+      color(245, 158, 66),
+      color(126, 224, 201),
+      color(145, 168, 235),
+      color(139, 55, 191),
+      color(252, 249, 179),
+      color(255, 105, 180),
+    ];
+
+    let size, R, vel, opa;
     for (let i = 0; i < num; i += 1) {
       if (Array.isArray(arg.size)) {
         size = floor(random(arg.size[0], arg.size[1] + 1));
       } else {
         size = arg.size ?? floor(random(20, 81));
+      }
+      if (Array.isArray(arg.R)) {
+        R = random(arg.R[0], arg.R[1]) * (size / 2);
+      } else {
+        R = (arg.R ?? 1.0) * (size / 2);
       }
       if (Array.isArray(arg.speed)) {
         vel = floor(random(arg.speed[0], arg.speed[1] + 1));
@@ -174,7 +193,7 @@ p5.prototype.ws_pulse = (arg) => {
         orgOpa: opa,
         x: random(size / 2, width - size / 2),
         y: random(size / 2, height - size / 2),
-        R: arg.R ?? size / 2,
+        R: R,
         col: col,
         vel: vel,
       });
@@ -191,7 +210,7 @@ p5.prototype.ws_pulse = (arg) => {
     const s = store.pulse[n];
     const col = s.col;
     col.setAlpha(s.opa);
-    pulseLayer.fill(s.col);
+    pulseLayer.fill(col);
     pulseLayer.square(s.x, s.y, s.size, s.R);
     if (mode == 'size') {
       s.size -= s.vel;
@@ -218,54 +237,93 @@ p5.prototype.ws_pulse = (arg) => {
 };
 
 /* 回転（ウィール）：複数の図形が円を描いて回転する */
+/* 引数： num, size, R, speed, dir, repeat, cols, opacity */
+/* repeat: 'bi', 'uni' (def: bi) */
+/* dir: 'shrink', 'expand' (def: shrink) */
+/* speedが配列の場合は、乱数ではなく、[回転速度, 収縮速度]になる */
 p5.prototype.ws_whirl = (arg) => {
-  // 初回のみ初期化
+  // 初期設定
   if (store.whirl.length === 0) {
-    const num = arg.num || 4;
-    const size = arg.size || 30;
-    const speed = arg.speed || 0.05;
-    const bl = arg.bl || 0;
-    const colors = arg.colors || defaultCols;
+    const num = arg.num || 6;
+    const cols = arg.cols || [
+      color(252, 121, 121),
+      color(245, 158, 66),
+      color(126, 224, 201),
+      color(145, 168, 235),
+      color(139, 55, 191),
+      color(252, 249, 179),
+      color(255, 105, 180),
+    ];
 
-    // 各四角形の初期角度と中心位置を設定
-    for (let i = 0; i < num; i++) {
-      const angle = (TWO_PI / num) * i; // 各四角形の初期角度
+    let size, R, rt_vel, se_vel, opa;
+    for (let i = 0; i < num; i += 1) {
+      if (Array.isArray(arg.size)) {
+        size = floor(random(arg.size[0], arg.size[1] + 1));
+      } else {
+        size = arg.size ?? 50;
+      }
+      if (Array.isArray(arg.R)) {
+        R = random(arg.R[0], arg.R[1]) * (size / 2);
+      } else {
+        R = (arg.R ?? 1.0) * (size / 2);
+      }
+      if (Array.isArray(arg.speed)) {
+        rt_vel = arg.speed[0];
+        se_vel = arg.speed[1] * 0.1;
+      } else {
+        rt_vel = arg.speed || 8;
+        se_vel = rt_vel * 0.1;
+      }
+      if (Array.isArray(arg.opacity)) {
+        opa = random(arg.opacity[0], arg.opacity[1]) * 255;
+      } else {
+        opa = (arg.opacity ?? 1) * 255;
+      }
+
+      const col = cols[i % cols.length];
+      col.setAlpha(opa);
+
       store.whirl.push({
-        x: width / 2, // 中心から始める
-        y: height / 2,
-        color: colors[i % colors.length],
-        angle: angle,
-        step: 0,
-        bl: bl,
         size: size,
-        speed: speed,
+        x: HALF_W,
+        y: HALF_H,
+        R: R,
+        col: col,
+        rt_vel: rt_vel,
+        se_vel: se_vel,
+        step: 0,
+        angle: (TWO_PI / num) * i,
       });
     }
   }
 
-  whirl.clear();
+  whirlLayer.push();
+  whirlLayer.clear();
+  whirlLayer.noStroke();
+  pulseLayer.rectMode(CENTER);
+
   for (let s of store.whirl) {
-    // 中心を基点にスパイラル移動
-    const spiralRadius = width / 2 - s.step * 0.5; // 半径を減少させながらスパイラル状に描画
-    s.x = width / 2 + cos(s.angle) * spiralRadius;
-    s.y = height / 2 + sin(s.angle) * spiralRadius;
+    const r = s.size / 2;
+    const radius = HALF_W - s.step * s.se_vel;
+    s.x = HALF_W - r + cos(s.angle) * radius;
+    s.y = HALF_H - r + sin(s.angle) * radius;
 
-    whirlLayer.push();
-    whirlLayer.fill(s.color);
-    whirlLayer.noStroke();
-    whirlLayer.s(s.x - s.size / 2, s.y - s.size / 2, s.size, s.bl);
+    const col = s.col;
+    col.setAlpha(s.opa);
+    whirlLayer.fill(col);
+    whirlLayer.square(s.x, s.y, s.size, s.R);
 
-    s.angle += s.speed; // 角度を変化させて回転
+    s.angle += s.rt_vel * 0.01; // 角度を変化させて回転
     s.step += 1; // スパイラルの進行
 
-    // スパイラルが外側に達したらリセット
-    if (spiralRadius <= 0) {
-      s.step = 0;
+    if (radius <= r) {
+      s.se_vel *= -1;
+      // s.step = 0;
     }
   }
 
   whirlLayer.pop();
-  image(Spiralss_Layer, 0, 0);
+  image(whirlLayer, 0, 0);
 };
 
 /* スパイラル：図形（1個）が円を描きながら中心にいく */
@@ -306,7 +364,7 @@ p5.prototype.ws_spiral = (arg) => {
   }
 
   // 円を中心に描く
-  spiralLayer.translate(width / 2, height / 2);
+  spiralLayer.translate(HALF_W, HALF_H);
   spiralLayer.fill(store.spiralData.currentColor);
 
   // 円の位置計算
