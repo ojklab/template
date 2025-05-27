@@ -6,14 +6,14 @@
  * - すべてデフォルトで動かすときも空のオブジェクトが必要 ws_function({});
  * - 同じテンプレート関数の引数を途中で変更しても変化しない
  *
- * 引数：
- * num    : 図形の数（グリッドは1辺の数、スパイラルには不要）
- * size   : 図形の1辺あるいは直径の長さ（既定値はランダム）
- * R      : 角丸の比率（0→1.0で四角→円へ／既定値は1.0）
- * speed  : 図形の移動／変化の速度（既定値はランダム）
- * cols   : [color(R,G,B), color(R,G,B), ...] の形式で複数指定可
- * opacity: 不透明度（0.0→1.0で不透明へ／既定値は1.0）
- * ※num以外は[最小値, 最大値]の形式で乱数（ランダム）が使える
+ * 比較的共通する引数：
+ * num    : 図形の数（グリッドは1辺の数、スパイラルは無し）
+ * size   : 図形の1辺あるいは直径の長さ
+ * R      : 角丸の比率（0から1の範囲／1が円）
+ * speed  : 図形の変化速度
+ * colors : 色セット [color(R,G,B), color(R,G,B), ...]
+ * opacity: 不透明度（0から1の範囲／1が不透明）
+ * ※パラメータによっては [A, B] の形式で2つの値を与えられる
  */
 
 /* 各テンプレートのレイヤー */
@@ -59,7 +59,7 @@ const store = {
 const rand01 = () => (random(0, 1) < 0.5 ? 1 : -1);
 const ws_reset = (tmpl) => (store[tmpl] = []);
 
-/* リバウンド：図形がランダムに動き回って端で跳ね返る */
+/*** リバウンド：図形がランダムに動き回って端で跳ね返る ***/
 /* 引数： num, size, R, speed, cols, opacity */
 p5.prototype.ws_rebound = (arg) => {
   // 初期設定
@@ -75,23 +75,26 @@ p5.prototype.ws_rebound = (arg) => {
       color(255, 105, 180),
     ];
 
-    let size, R, vel, opa;
     for (let i = 0; i < num; i += 1) {
+      let size;
       if (Array.isArray(arg.size)) {
         size = floor(random(arg.size[0], arg.size[1] + 1));
       } else {
         size = arg.size ?? floor(random(20, 81));
       }
+      let R;
       if (Array.isArray(arg.R)) {
         R = random(arg.R[0], arg.R[1]) * (size / 2);
       } else {
         R = (arg.R ?? 1.0) * (size / 2);
       }
+      let vel;
       if (Array.isArray(arg.speed)) {
         vel = floor(random(arg.speed[0], arg.speed[1] + 1));
       } else {
         vel = arg.speed || floor(random(2, 6));
       }
+      let opa;
       if (Array.isArray(arg.opacity)) {
         opa = random(arg.opacity[0], arg.opacity[1]) * 255;
       } else {
@@ -138,11 +141,11 @@ p5.prototype.ws_rebound = (arg) => {
   image(reboundLayer, 0, 0);
 };
 
-/* パルス：図形がランダムに出現して消える */
-/* 引数： num, size, R, speed, mode, cols, opacity */
-/* mode: 'size', 'opacity' */
+/*** パルス：図形がランダムに出現して消える ***/
+/* 引数： num, size, R, speed, cols, opacity, target */
+// target（現象する対象）: 'size', 'opacity'
 p5.prototype.ws_pulse = (arg) => {
-  const mode = arg.mode || 'size';
+  const target = arg.target || 'size';
 
   // 初期設定
   if (store.pulse.length === 0) {
@@ -157,27 +160,30 @@ p5.prototype.ws_pulse = (arg) => {
       color(255, 105, 180),
     ];
 
-    let size, R, vel, opa;
     for (let i = 0; i < num; i += 1) {
+      let size;
       if (Array.isArray(arg.size)) {
         size = floor(random(arg.size[0], arg.size[1] + 1));
       } else {
         size = arg.size ?? floor(random(20, 81));
       }
+      let R;
       if (Array.isArray(arg.R)) {
         R = random(arg.R[0], arg.R[1]) * (size / 2);
       } else {
         R = (arg.R ?? 1.0) * (size / 2);
       }
+      let vel;
       if (Array.isArray(arg.speed)) {
         vel = floor(random(arg.speed[0], arg.speed[1] + 1));
       } else {
-        if (mode == 'size') {
+        if (target == 'size') {
           vel = arg.speed || floor(random(1, 3));
         } else {
           vel = arg.speed || floor(random(5, 20));
         }
       }
+      let opa;
       if (Array.isArray(arg.opacity)) {
         opa = random(arg.opacity[0], arg.opacity[1]) * 255;
       } else {
@@ -212,7 +218,7 @@ p5.prototype.ws_pulse = (arg) => {
     col.setAlpha(s.opa);
     pulseLayer.fill(col);
     pulseLayer.square(s.x, s.y, s.size, s.R);
-    if (mode == 'size') {
+    if (target == 'size') {
       s.size -= s.vel;
       if (s.size < PULSE_MINSIZE) {
         const r = s.orgSize / 2;
@@ -220,7 +226,7 @@ p5.prototype.ws_pulse = (arg) => {
         store.pulse[n].x = random(r, width - r);
         store.pulse[n].y = random(r, height - r);
       }
-    } else if (mode == 'opacity') {
+    } else if (target == 'opacity') {
       s.opa -= s.vel;
       if (s.opa < 0) {
         const r = s.orgSize / 2;
@@ -236,16 +242,17 @@ p5.prototype.ws_pulse = (arg) => {
   image(pulseLayer, 0, 0);
 };
 
-/* 回転（ウィール）：複数の図形が円を描いて回転する */
-/* 引数： num, size, R, speed, dir, repeat, cols, opacity */
-/* repeat: 'bi', 'uni' (def: bi) */
-/* dir: 'shrink', 'expand' (def: shrink) */
-/* speedが配列の場合は、乱数ではなく、[回転速度, 収縮速度]になる */
+/*** 回転（ウィール）：複数の図形が円を描いて回転する ***/
+/* 引数： num, size, R, speed, colors, opacity, direction, repeat, diameter */
+// fluctuate（収縮・膨張を繰り返すか否か）: on, off (既定値: on)
+// direcrion（収縮か膨張か）: 'shrink', 'expand' (既定値: shrink)
+// diameter（回転直径）: width以下の数値
+// 注） speedが配列の場合は、乱数ではなく、[回転速度, 収縮速度]になる
 p5.prototype.ws_whirl = (arg) => {
   // 初期設定
   if (store.whirl.length === 0) {
     const num = arg.num || 6;
-    const cols = arg.cols || [
+    const cols = arg.colors || [
       color(252, 121, 121),
       color(245, 158, 66),
       color(126, 224, 201),
@@ -255,32 +262,36 @@ p5.prototype.ws_whirl = (arg) => {
       color(255, 105, 180),
     ];
 
-    let size, R, rt_vel, se_vel, opa;
     for (let i = 0; i < num; i += 1) {
+      let size;
       if (Array.isArray(arg.size)) {
         size = floor(random(arg.size[0], arg.size[1] + 1));
       } else {
         size = arg.size ?? 50;
       }
+      let R;
       if (Array.isArray(arg.R)) {
         R = random(arg.R[0], arg.R[1]) * (size / 2);
       } else {
         R = (arg.R ?? 1.0) * (size / 2);
       }
+      let rt_vel, se_vel;
       if (Array.isArray(arg.speed)) {
         rt_vel = arg.speed[0];
-        se_vel = arg.speed[1] * 0.1;
+        se_vel = arg.speed[1];
       } else {
         rt_vel = arg.speed || 8;
-        se_vel = rt_vel * 0.1;
+        se_vel = rt_vel;
       }
+      let opa;
       if (Array.isArray(arg.opacity)) {
         opa = random(arg.opacity[0], arg.opacity[1]) * 255;
       } else {
         opa = (arg.opacity ?? 1) * 255;
       }
-
-      const col = cols[i % cols.length];
+      const dir = arg.direction == 'expand' ? 1 : -1;
+      const diameter = arg.diameter ?? width - size;
+      const col = random(cols);
       col.setAlpha(opa);
 
       store.whirl.push({
@@ -289,36 +300,46 @@ p5.prototype.ws_whirl = (arg) => {
         y: HALF_H,
         R: R,
         col: col,
-        rt_vel: rt_vel,
-        se_vel: se_vel,
-        step: 0,
+        rt_vel: rt_vel * 0.01,
+        se_vel: se_vel * 0.005,
         angle: (TWO_PI / num) * i,
+        dir: dir,
+        fluctuate: arg.fluctuate == 'off' ? false : true,
+        step: 0,
+        radius: dir > 0 ? 0 : diameter / 2,
+        diameter: diameter,
       });
     }
   }
 
+  // 図形の描画
   whirlLayer.push();
   whirlLayer.clear();
   whirlLayer.noStroke();
   pulseLayer.rectMode(CENTER);
 
   for (let s of store.whirl) {
+    s.radius += s.dir * s.se_vel * s.step;
     const r = s.size / 2;
-    const radius = HALF_W - s.step * s.se_vel;
-    s.x = HALF_W - r + cos(s.angle) * radius;
-    s.y = HALF_H - r + sin(s.angle) * radius;
+    s.x = HALF_W - r + cos(s.angle) * s.radius;
+    s.y = HALF_H - r + sin(s.angle) * s.radius;
 
-    const col = s.col;
-    col.setAlpha(s.opa);
-    whirlLayer.fill(col);
+    whirlLayer.fill(s.col);
     whirlLayer.square(s.x, s.y, s.size, s.R);
 
-    s.angle += s.rt_vel * 0.01; // 角度を変化させて回転
-    s.step += 1; // スパイラルの進行
+    s.angle += s.rt_vel;
+    s.step += 1;
 
-    if (radius <= r) {
-      s.se_vel *= -1;
-      // s.step = 0;
+    if (
+      (s.dir < 0 && s.radius <= 0) ||
+      (s.dir > 0 && s.radius >= s.diameter / 2)
+    ) {
+      if (s.fluctuate) {
+        s.dir *= -1;
+      } else {
+        s.radius = s.diameter / 2;
+      }
+      s.step = 0;
     }
   }
 

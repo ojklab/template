@@ -21,7 +21,7 @@ function draw() {
 
   // 開始から10秒未満まで
   if (SEC < 15) {
-    ws_whirl({ speed: [20, 50] });
+    ws_whirl({ direction: 'shrink', diameter: width / 2 });
     // ws_pulse({ num: 30, mode: 'opacity', opacity: [0.1, 0.9] });
   }
   // 開始10秒から20秒未満まで
