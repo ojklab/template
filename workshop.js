@@ -245,7 +245,7 @@ p5.prototype.ws_pulse = (arg) => {
 /*** 回転（ウィール）：複数の図形が円を描いて回転する ***/
 /* 引数： num, size, R, speed, colors, opacity, direction, repeat, diameter */
 // fluctuate（収縮・膨張を繰り返すか否か）: on, off (既定値: on)
-// direcrion（収縮か膨張か）: 'shrink', 'expand' (既定値: shrink)
+// direcrion（収縮か膨張か）: 負の値, 正の値 (既定値: -1)
 // diameter（回転直径）: width以下の数値
 // 注） speedが配列の場合は、乱数ではなく、[回転速度, 収縮速度]になる
 p5.prototype.ws_whirl = (arg) => {
@@ -289,7 +289,7 @@ p5.prototype.ws_whirl = (arg) => {
       } else {
         opa = (arg.opacity ?? 1) * 255;
       }
-      const dir = arg.direction == 'expand' ? 1 : -1;
+      const dir = arg.direction > 0 ? 1 : -1;
       const diameter = arg.diameter ?? width - size;
       const col = random(cols);
       col.setAlpha(opa);
