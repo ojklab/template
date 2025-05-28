@@ -29,7 +29,7 @@ function draw() {
     // ws_grid({ noise: 3, R: [0, 1] });
 
     // ws_rebound({ num: 10, speed: [1, 10] });
-    ws_pulse({ fade: 'size', R: 0 });
+    ws_pulse({ fade: 'size', R: 0.5 });
     // ws_whirl({ R: [0, 1] });
     // ws_whirl({ direction: 'shrink', diameter: width / 2 });
     // ws_pulse({ num: 30, mode: 'opacity', opacity: [0.1, 0.9] });

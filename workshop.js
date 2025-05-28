@@ -169,9 +169,9 @@ p5.prototype.ws_pulse = (arg) => {
       }
       let R;
       if (Array.isArray(arg.R)) {
-        R = random(arg.R[0], arg.R[1]) * (size / 2);
+        R = random(arg.R[0], arg.R[1]);
       } else {
-        R = (arg.R ?? 1.0) * (size / 2);
+        R = arg.R ?? 1.0;
       }
       let vel;
       if (Array.isArray(arg.speed)) {
@@ -213,10 +213,6 @@ p5.prototype.ws_pulse = (arg) => {
   pulseLayer.rectMode(CENTER);
 
   for (const s of store.pulse) {
-    const col = s.col;
-    col.setAlpha(s.opa);
-    pulseLayer.fill(col);
-    pulseLayer.square(s.x, s.y, s.size, s.R);
     if (fade == 'size') {
       s.size -= s.vel;
       if (s.size < PULSE_MINSIZE) {
@@ -234,6 +230,12 @@ p5.prototype.ws_pulse = (arg) => {
         s.y = random(r, height - r);
       }
     }
+
+    const col = s.col;
+    col.setAlpha(s.opa);
+    pulseLayer.fill(col);
+    const R = s.R * (s.size / 2);
+    pulseLayer.square(s.x, s.y, s.size, R);
   }
 
   // メインキャンバスに描画
