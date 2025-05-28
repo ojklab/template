@@ -13,7 +13,8 @@
  * speed  : 図形の変化速度
  * colors : 色セット [color(R,G,B), color(R,G,B), ...]
  * opacity: 不透明度（0から1の範囲／1が不透明）
- * ※パラメータによっては [A, B] の形式で2つの値を与えられる
+ * 注） パラメータによっては [A, B] の形式で2つの値を与えられる（各コードの先頭に記載）
+ * 注） colorsで単色を指定するときも [color(R,G,B)] と配列の形式にする
  */
 
 /* 各テンプレートのレイヤー */
@@ -58,6 +59,7 @@ const ws_reset = (tmpl) => (store[tmpl] = []);
 
 /*** リバウンド：図形がランダムに動き回って端で跳ね返る ***/
 /* 引数： num, size, R, speed, cols, opacity */
+// 注） size, R, speed, opacityは [最小値, 最大値] の形式で乱数
 p5.prototype.ws_rebound = (arg) => {
   // 初期設定
   if (store.rebound.length === 0) {
@@ -139,8 +141,9 @@ p5.prototype.ws_rebound = (arg) => {
 };
 
 /*** パルス：図形がランダムに出現して消える ***/
-/* 引数： num, size, R, speed, cols, opacity, target */
+/* 引数： num, size, R, speed, cols, opacity, fade */
 // fade（消え方）: 'size', 'opacity'
+// 注） size, R, speed, opacityは [最小値, 最大値] の形式で乱数
 p5.prototype.ws_pulse = (arg) => {
   const fade = arg.fade || 'size';
 
@@ -209,8 +212,7 @@ p5.prototype.ws_pulse = (arg) => {
   pulseLayer.noStroke();
   pulseLayer.rectMode(CENTER);
 
-  for (let n = 0; n < store.pulse.length; n += 1) {
-    const s = store.pulse[n];
+  for (const s of store.pulse) {
     const col = s.col;
     col.setAlpha(s.opa);
     pulseLayer.fill(col);
@@ -219,17 +221,17 @@ p5.prototype.ws_pulse = (arg) => {
       s.size -= s.vel;
       if (s.size < PULSE_MINSIZE) {
         const r = s.orgSize / 2;
-        store.pulse[n].size = s.orgSize;
-        store.pulse[n].x = random(r, width - r);
-        store.pulse[n].y = random(r, height - r);
+        s.size = s.orgSize;
+        s.x = random(r, width - r);
+        s.y = random(r, height - r);
       }
     } else if (fade == 'opacity') {
       s.opa -= s.vel;
       if (s.opa < 0) {
         const r = s.orgSize / 2;
-        store.pulse[n].opa = s.orgOpa;
-        store.pulse[n].x = random(r, width - r);
-        store.pulse[n].y = random(r, height - r);
+        s.opa = s.orgOpa;
+        s.x = random(r, width - r);
+        s.y = random(r, height - r);
       }
     }
   }
@@ -244,6 +246,7 @@ p5.prototype.ws_pulse = (arg) => {
 // fluctuate（収縮・膨張を繰り返すか否か）: on, off (既定値: on)
 // direcrion（収縮／膨張方向）: 負の値, 正の値 (既定値: -1)
 // diameter（回転直径）: width以下の数値
+// 注） size, R, opacityは [最小値, 最大値] の形式で乱数
 // 注） speedが配列の場合は、乱数ではなく、[回転速度, 収縮／膨張速度]になる
 // 注） directionが配列の場合は、乱数ではなく、[収縮／膨張方向, 左回り／右回り]になる
 p5.prototype.ws_whirl = (arg) => {
@@ -353,10 +356,11 @@ p5.prototype.ws_whirl = (arg) => {
 };
 
 /*** スパイラル：図形（1個）が円を描きながら中心にいく ***/
-/* 引数： num, size, R, speed, colors, opacity, direction, diameter, interval */
+/* 引数： size, R, speed, colors, opacity, direction, diameter, interval */
 // direction（収縮／膨張方向）: 負の値, 正の値 (既定値: -1)
 // diameter（回転直径）: width以下の数値
-// interval（色変化間隔）: フレーム数（既定値： 色変化なし）
+// interval（色変化間隔）: 秒 （既定値： 色変化なし）
+// 注） size, R, opacityは [最小値, 最大値] の形式で乱数
 // 注） speedが配列の場合は、乱数ではなく、[回転速度, 収縮／膨張速度]になる
 // 注） directionが配列の場合は、乱数ではなく、[収縮／膨張方向, 左回り／右回り]になる
 p5.prototype.ws_spiral = (arg) => {
@@ -369,6 +373,7 @@ p5.prototype.ws_spiral = (arg) => {
     color(252, 249, 179),
     color(255, 105, 180),
   ];
+  const fps = frameRate();
 
   if (store.spiral.length == 0) {
     const size = arg.size ?? 50;
@@ -406,7 +411,7 @@ p5.prototype.ws_spiral = (arg) => {
       radius: v_dir > 0 ? 0 : diameter / 2,
       diameter: diameter,
       angle: random(0, 360),
-      int: arg.interval ?? 0,
+      int: round(arg.interval * fps) ?? 0,
     });
 
     console.log(store.spiral[0]);
@@ -423,7 +428,6 @@ p5.prototype.ws_spiral = (arg) => {
   if (frameCount % s.int == 0) {
     const t = floor(frameCount / s.int);
     const col = cols[t % cols.length];
-    col.setAlpha(s.opa);
     s.col = col;
   }
 
@@ -457,51 +461,102 @@ p5.prototype.ws_spiral = (arg) => {
   image(spiralLayer, 0, 0);
 };
 
-/* グリッド：敷き詰めた図形の色などが変化する */
+/*** グリッド：敷き詰めた図形の色などが変化する ***/
+/* 引数： num, size, R, speed, colors, opacity, interval, noise */
+// num（一辺の図形数）： 個数
+// interval（色変化間隔）: 秒 （既定値： 色変化なし）
+// noise（振動の大きさ）: 数値 （規定値： 振動なし）
 p5.prototype.ws_grid = (arg) => {
-  const cols = arg.cols || 5;
-  const rows = arg.rows || 5;
-  const shapeSize = arg.shapeSize || 50;
-  const cornerRadius = arg.cornerRadius || 0;
-  const baseColors = arg.colors || defaultCols;
-  const colorChangeSpeed = arg.colorChangeSpeed || 30;
-  const useStroke = arg.stroke !== undefined ? arg.stroke : true;
-  const randomizeColor =
-    arg.randomizeColor !== undefined ? arg.randomizeColor : false;
+  const num = arg.num || 5;
+  const cols = arg.colors || [
+    color(252, 121, 121),
+    color(245, 158, 66),
+    color(126, 224, 201),
+    color(145, 168, 235),
+    color(139, 55, 191),
+    color(252, 249, 179),
+    color(255, 105, 180),
+  ];
+  const step = floor(width / num);
 
-  gridLayer.push();
+  if (store.grid.length === 0) {
+    const fps = frameRate();
+    for (let y = 0; y < num; y += 1) {
+      for (let x = 0; x < num; x += 1) {
+        let size;
+        if (Array.isArray(arg.size)) {
+          size = floor(random(arg.size[0], arg.size[1] + 1));
+        } else {
+          size = arg.size ?? step / 2;
+        }
+        let R;
+        if (Array.isArray(arg.R)) {
+          R = random(arg.R[0], arg.R[1]);
+        } else {
+          R = arg.R ?? 1.0;
+        }
+        let vel;
+        if (Array.isArray(arg.speed)) {
+          vel = floor(random(arg.speed[0], arg.speed[1] + 1));
+        } else {
+          vel = arg.speed || floor(random(2, 6));
+        }
+        let opa;
+        if (Array.isArray(arg.opacity)) {
+          opa = random(arg.opacity[0], arg.opacity[1]) * 255;
+        } else {
+          opa = (arg.opacity ?? 1) * 255;
+        }
+        let int;
+        if (Array.isArray(arg.interval)) {
+          int = floor(random(arg.interval[0], arg.interval[1]));
+        } else {
+          int = arg.interval ?? random(0.5, 2);
+        }
+        let sigma;
+        if (Array.isArray(arg.noise)) {
+          sigma = random(arg.noise[0], arg.noise[1]);
+        } else {
+          sigma = arg.noise ?? 0;
+        }
 
-  if (useStroke) {
-    gridLayer.stroke(0);
-  } else {
-    gridLayer.noStroke();
-  }
+        const col = cols[(x + y * step) % cols.length];
+        col.setAlpha(opa);
 
-  const xStep = width / cols;
-  const yStep = height / rows;
-
-  if (store.grid.length == 0) {
-    for (let i = 0; i < cols * rows; i++) {
-      store.grid.push(random(baseColors));
-    }
-  }
-
-  const colors = store.gridcolors;
-
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      const index = y * cols + x;
-      const posX = x * xStep + xStep / 2;
-      const posY = y * yStep + yStep / 2;
-
-      if (randomizeColor && frameCount % colorChangeSpeed === 0) {
-        colors[index] = random(baseColors);
+        store.grid.push({
+          size: size,
+          x: x * step + floor(step / 2),
+          y: y * step + floor(step / 2),
+          R: R,
+          col: col,
+          opa: opa,
+          sigma: sigma,
+          int: round(int * fps),
+        });
       }
-
-      gridLayer.fill(colors[index]);
-      gridLayer.rectMode(CENTER);
-      gridLayer.square(posX, posY, shapeSize, cornerRadius);
     }
+  }
+  // 図形の描画
+  gridLayer.push();
+  gridLayer.clear();
+  gridLayer.noStroke();
+  gridLayer.rectMode(CENTER);
+
+  for (const s of store.grid) {
+    s.size = abs(randomGaussian(s.size, s.sigma));
+    if (frameCount % s.int == 0) {
+      if (Array.isArray(arg.size)) {
+        s.size = floor(random(arg.size[0], arg.size[1] + 1));
+      } else {
+        s.size = arg.size ? s.size : step / 2;
+      }
+      s.col = random(cols);
+      s.col.setAlpha(s.opa);
+    }
+    const R = s.R * (s.size / 2);
+    const col = s.col;
+    gridLayer.fill(col);
+    gridLayer.square(s.x, s.y, s.size, R);
   }
 
   gridLayer.pop();
