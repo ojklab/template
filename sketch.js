@@ -1,3 +1,4 @@
+const END_TIME = 30; // 再生時間
 const FPS = 30;
 let sound;
 
@@ -13,15 +14,21 @@ function setup() {
 }
 
 function draw() {
-  // 背景を白く塗りつぶす
-  background(220);
-
   // SECは開始からの秒数
   const SEC = floor(frameCount / FPS);
 
+  /*** 書き換えるのはここから ***/
+
+  // 背景を白く塗りつぶす
+  // background(frameCount%255, 255, 255);
+  background(255);
+
   // 開始から10秒未満まで
   if (SEC < 15) {
-    ws_whirl({ direction: 'shrink', diameter: width / 2 });
+    ws_rebound({ num: 10, speed: [1, 10] });
+    // ws_pulse({target:'opacity', R:0});
+    // ws_whirl({speed:[10, 0], diameter: width/2 });
+    // ws_whirl({ direction: 'shrink', diameter: width / 2 });
     // ws_pulse({ num: 30, mode: 'opacity', opacity: [0.1, 0.9] });
   }
   // 開始10秒から20秒未満まで
@@ -46,8 +53,15 @@ function draw() {
     ws_reset('rebound');
   }
 
+  /*** 書き換えるのはここまで ***/
+
   // 1秒毎に秒数をコンソールに表示
   if (frameCount % FPS == 0) print(SEC);
-  // 60秒でプログラム終了
-  if (SEC == 60) return;
+
+  // プログラム終了
+  if (SEC == END_TIME) {
+    noLoop();
+    sound.stop();
+    background(255);
+  }
 }
