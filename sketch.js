@@ -25,7 +25,7 @@ function draw() {
 
   // 開始から10秒未満まで
   if (SEC < 30) {
-    ws_spiral({ opacity: 0.5 });
+    ws_spiral({ direction: [-1, -1], size: 100 });
     // ws_rebound({ num: 10, speed: [1, 10] });
     // ws_pulse({ target: 'opacity', R: 0 });
     // ws_whirl({ size: [10, 100], opacity: [0.1, 1] });
@@ -48,16 +48,16 @@ function draw() {
   // 同じテンプレートを別のパラメーターで使いたいときはリセットする
   if (frameCount == FPS * 10) {
     // 10秒でリセット
-    ws_reset('spiral');
+    // ws_reset('spiral');
   } else if (frameCount == FPS * 20) {
     // 20秒でリセット
-    ws_reset('rebound');
+    // ws_reset('rebound');
   }
 
   /*** 書き換えるのはここまで ***/
 
   // 1秒毎に秒数をコンソールに表示
-  if (frameCount % FPS == 0) print(SEC);
+  // if (frameCount % FPS == 0) print(SEC);
 
   // プログラム終了
   if (SEC == END_TIME) {

@@ -345,10 +345,11 @@ p5.prototype.ws_whirl = (arg) => {
 
 /*** スパイラル：図形（1個）が円を描きながら中心にいく ***/
 /* 引数： num, size, R, speed, colors, opacity, direction, diameter, interval */
-// direcrion（収縮か膨張か）: 負の値, 正の値 (既定値: -1)
+// direction（収縮／膨張方向）: 負の値, 正の値 (既定値: -1)
 // diameter（回転直径）: width以下の数値
 // interval（色変化間隔）: フレーム数（既定値： 色変化なし）
 // 注） speedが配列の場合は、乱数ではなく、[回転速度, 収縮／膨張速度]になる
+// 注） directionが配列の場合は、乱数ではなく、[収縮／膨張方向, 左回り／右回り]になる
 p5.prototype.ws_spiral = (arg) => {
   const cols = arg.colors || [
     color(252, 121, 121),
@@ -361,35 +362,45 @@ p5.prototype.ws_spiral = (arg) => {
   ];
 
   if (store.spiral.length == 0) {
+    const size = arg.size ?? 50;
     const col = random(cols);
     const opa = (arg.opacity ?? 1) * 255;
     col.setAlpha(opa);
-    let rt_vel, se_vel;
+    let h_vel, v_vel;
     if (Array.isArray(arg.speed)) {
-      rt_vel = arg.speed[0];
-      se_vel = arg.speed[1];
+      h_vel = arg.speed[0];
+      v_vel = arg.speed[1];
     } else {
-      rt_vel = arg.speed || 10;
-      se_vel = rt_vel;
+      h_vel = arg.speed || 10;
+      v_vel = h_vel;
     }
-    const size = arg.size ?? 50;
+    let h_dir, v_dir;
+    if (Array.isArray(arg.direction)) {
+      v_dir = arg.direction[0] > 0 ? 1 : -1;
+      h_dir = arg.direction[1] > 0 ? 1 : -1;
+    } else {
+      v_dir = arg.direction ?? -1;
+      h_dir = 1;
+    }
     const diameter = arg.diameter ?? width - size;
-    const dir = arg.direction > 0 ? 1 : -1;
 
     store.spiral.push({
       size: size,
       R: (arg.R ?? 1.0) * (size / 2),
-      rt_vel: rt_vel * 0.01,
-      se_vel: se_vel * 0.1,
+      v_vel: v_vel * 0.1,
+      h_vel: h_vel * 0.01,
       col: col,
       opa: opa,
       orgOpa: opa,
-      dir: dir,
-      radius: dir > 0 ? 0 : diameter / 2,
+      v_dir: v_dir,
+      h_dir: h_dir,
+      radius: v_dir > 0 ? 0 : diameter / 2,
       diameter: diameter,
       angle: random(0, 360),
       int: arg.interval ?? 0,
     });
+
+    console.log(store.spiral[0]);
   }
 
   spiralLayer.push();
@@ -415,16 +426,16 @@ p5.prototype.ws_spiral = (arg) => {
   let y = sin(s.angle) * s.radius;
   spiralLayer.square(x, y, s.size, s.R);
 
-  s.radius += s.dir * s.se_vel;
-  s.angle += s.rt_vel;
+  s.angle += s.h_dir * s.h_vel;
+  s.radius += s.v_dir * s.v_vel;
 
   if (
-    (s.dir < 0 && s.radius <= SPIRAL_MINRAD) ||
-    (s.dir > 0 && s.radius >= s.diameter / 2)
+    (s.v_dir < 0 && s.radius <= SPIRAL_MINRAD) ||
+    (s.v_dir > 0 && s.radius >= s.diameter / 2)
   ) {
-    s.opa -= s.orgOpa / (s.rt_vel * 100);
+    s.opa -= s.orgOpa / (s.h_vel * 100);
     if (s.opa <= 0) {
-      s.radius = s.dir > 0 ? 0 : s.diameter / 2;
+      s.radius = s.v_dir > 0 ? 0 : s.diameter / 2;
       s.angle = random(0, 360);
       s.opa = s.orgOpa;
       const col = random(cols);
