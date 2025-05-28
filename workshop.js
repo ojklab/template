@@ -26,7 +26,9 @@ let gridLayer;
 let defaultCols;
 
 /* 定数 */
-const PULSE_MINSIZE = 2; // 未満でリセット
+const PULSE_MINSIZE = 3;
+const WHIRL_MINRAD = 0;
+const SPIRAL_MINRAD = 5;
 let HALF_W, HALF_H;
 
 /* レイヤー設定 */
@@ -47,11 +49,6 @@ const store = {
   pulse: [],
   whirl: [],
   spiral: [],
-  spiralData: {
-    angle: 0,
-    radius: 250,
-    currentCol: null,
-  },
   grid: [],
 };
 
@@ -143,9 +140,9 @@ p5.prototype.ws_rebound = (arg) => {
 
 /*** パルス：図形がランダムに出現して消える ***/
 /* 引数： num, size, R, speed, cols, opacity, target */
-// target（現象する対象）: 'size', 'opacity'
+// fade（消え方）: 'size', 'opacity'
 p5.prototype.ws_pulse = (arg) => {
-  const target = arg.target || 'size';
+  const fade = arg.fade || 'size';
 
   // 初期設定
   if (store.pulse.length === 0) {
@@ -177,7 +174,7 @@ p5.prototype.ws_pulse = (arg) => {
       if (Array.isArray(arg.speed)) {
         vel = floor(random(arg.speed[0], arg.speed[1] + 1));
       } else {
-        if (target == 'size') {
+        if (fade == 'size') {
           vel = arg.speed || floor(random(1, 3));
         } else {
           vel = arg.speed || floor(random(5, 20));
@@ -218,7 +215,7 @@ p5.prototype.ws_pulse = (arg) => {
     col.setAlpha(s.opa);
     pulseLayer.fill(col);
     pulseLayer.square(s.x, s.y, s.size, s.R);
-    if (target == 'size') {
+    if (fade == 'size') {
       s.size -= s.vel;
       if (s.size < PULSE_MINSIZE) {
         const r = s.orgSize / 2;
@@ -226,7 +223,7 @@ p5.prototype.ws_pulse = (arg) => {
         store.pulse[n].x = random(r, width - r);
         store.pulse[n].y = random(r, height - r);
       }
-    } else if (target == 'opacity') {
+    } else if (fade == 'opacity') {
       s.opa -= s.vel;
       if (s.opa < 0) {
         const r = s.orgSize / 2;
@@ -243,11 +240,11 @@ p5.prototype.ws_pulse = (arg) => {
 };
 
 /*** 回転（ウィール）：複数の図形が円を描いて回転する ***/
-/* 引数： num, size, R, speed, colors, opacity, direction, repeat, diameter */
+/* 引数： num, size, R, speed, colors, opacity, direction, fluctuate, diameter */
 // fluctuate（収縮・膨張を繰り返すか否か）: on, off (既定値: on)
 // direcrion（収縮か膨張か）: 負の値, 正の値 (既定値: -1)
 // diameter（回転直径）: width以下の数値
-// 注） speedが配列の場合は、乱数ではなく、[回転速度, 収縮速度]になる
+// 注） speedが配列の場合は、乱数ではなく、[回転速度, 収縮／膨張速度]になる
 p5.prototype.ws_whirl = (arg) => {
   // 初期設定
   if (store.whirl.length === 0) {
@@ -305,9 +302,9 @@ p5.prototype.ws_whirl = (arg) => {
         angle: (TWO_PI / num) * i,
         dir: dir,
         fluctuate: arg.fluctuate == 'off' ? false : true,
-        step: 0,
         radius: dir > 0 ? 0 : diameter / 2,
         diameter: diameter,
+        step: 0,
       });
     }
   }
@@ -316,13 +313,12 @@ p5.prototype.ws_whirl = (arg) => {
   whirlLayer.push();
   whirlLayer.clear();
   whirlLayer.noStroke();
-  pulseLayer.rectMode(CENTER);
+  whirlLayer.rectMode(CENTER);
 
   for (let s of store.whirl) {
     s.radius += s.dir * s.se_vel * s.step;
-    const r = s.size / 2;
-    s.x = HALF_W - r + cos(s.angle) * s.radius;
-    s.y = HALF_H - r + sin(s.angle) * s.radius;
+    s.x = HALF_W + cos(s.angle) * s.radius;
+    s.y = HALF_H + sin(s.angle) * s.radius;
 
     whirlLayer.fill(s.col);
     whirlLayer.square(s.x, s.y, s.size, s.R);
@@ -331,7 +327,7 @@ p5.prototype.ws_whirl = (arg) => {
     s.step += 1;
 
     if (
-      (s.dir < 0 && s.radius <= 0) ||
+      (s.dir < 0 && s.radius <= WHIRL_MINRAD) ||
       (s.dir > 0 && s.radius >= s.diameter / 2)
     ) {
       if (s.fluctuate) {
@@ -347,64 +343,94 @@ p5.prototype.ws_whirl = (arg) => {
   image(whirlLayer, 0, 0);
 };
 
-/* スパイラル：図形（1個）が円を描きながら中心にいく */
+/*** スパイラル：図形（1個）が円を描きながら中心にいく ***/
+/* 引数： num, size, R, speed, colors, opacity, direction, diameter, interval */
+// direcrion（収縮か膨張か）: 負の値, 正の値 (既定値: -1)
+// diameter（回転直径）: width以下の数値
+// interval（色変化間隔）: フレーム数（既定値： 色変化なし）
+// 注） speedが配列の場合は、乱数ではなく、[回転速度, 収縮／膨張速度]になる
 p5.prototype.ws_spiral = (arg) => {
-  const spd = arg.spd || 0.02;
-  const radiusDec = arg.radiusDec || 0.2;
-  const minRad = arg.minRad || 10;
-  const maxRad = arg.maxRad || 250;
-  const col = arg.col || 60; //色
-  const r = arg.r || 40;
-  const bl = arg.bl || 10; //角の丸さ
+  const cols = arg.colors || [
+    color(252, 121, 121),
+    color(245, 158, 66),
+    color(126, 224, 201),
+    color(145, 168, 235),
+    color(139, 55, 191),
+    color(252, 249, 179),
+    color(255, 105, 180),
+  ];
 
-  // const g = circle_rotate_pg;
+  if (store.spiral.length == 0) {
+    const col = random(cols);
+    const opa = (arg.opacity ?? 1) * 255;
+    col.setAlpha(opa);
+    let rt_vel, se_vel;
+    if (Array.isArray(arg.speed)) {
+      rt_vel = arg.speed[0];
+      se_vel = arg.speed[1];
+    } else {
+      rt_vel = arg.speed || 10;
+      se_vel = rt_vel;
+    }
+    const size = arg.size ?? 50;
+    const diameter = arg.diameter ?? width - size;
+    const dir = arg.direction > 0 ? 1 : -1;
+
+    store.spiral.push({
+      size: size,
+      R: (arg.R ?? 1.0) * (size / 2),
+      rt_vel: rt_vel * 0.01,
+      se_vel: se_vel * 0.1,
+      col: col,
+      opa: opa,
+      orgOpa: opa,
+      dir: dir,
+      radius: dir > 0 ? 0 : diameter / 2,
+      diameter: diameter,
+      angle: random(0, 360),
+      int: arg.interval ?? 0,
+    });
+  }
+
   spiralLayer.push();
   spiralLayer.clear();
   spiralLayer.noStroke();
-
-  const baseColors = [
-    color(252, 121, 121), // 赤系
-    color(126, 224, 201), // 緑系
-    color(145, 168, 235), // 青系
-    color(252, 249, 179), // 黄色系
-  ];
-
-  const speed = spd; // 回転速度
-  const radiusDecrement = radiusDec; // 半径の縮小量
-  const minRadius = minRad; // 最小半径
-  const maxRadius = maxRad; // 最大半径
-
-  // 初期色の設定
-  if (store.spiralData.currentColor === null) {
-    store.circle_rotate_currentColor = random(baseColors);
-  }
-
-  // 円の色を60フレームごとに変更
-  if (frameCount % col === 0) {
-    store.spiralData.currentColor = random(baseColors);
-  }
-
-  // 円を中心に描く
+  spiralLayer.rectMode(CENTER);
   spiralLayer.translate(HALF_W, HALF_H);
-  spiralLayer.fill(store.spiralData.currentColor);
+  spiralLayer.angleMode(DEGREES);
 
-  // 円の位置計算
-  let x = store.spiralData.radius * cos(store.spiralData.angle);
-  let y = store.spiralData.radius * sin(store.spiralData.angle);
+  const s = store.spiral[0];
+  if (frameCount % s.int == 0) {
+    const t = floor(frameCount / s.int);
+    const col = cols[t % cols.length];
+    col.setAlpha(s.opa);
+    s.col = col;
+  }
 
-  // 円を描画
-  spiralLayer.square(x, y, r, bl); //四角形⇄円へと変更可,40,10
-  // ellipse(x, y, 50, 50);
+  const col = s.col;
+  col.setAlpha(s.opa);
+  spiralLayer.fill(col);
 
-  // 半径を縮めて、回転を進める
-  store.spiralData.radius -= radiusDecrement;
-  store.spiralData.angle += speed;
+  let x = cos(s.angle) * s.radius;
+  let y = sin(s.angle) * s.radius;
+  spiralLayer.square(x, y, s.size, s.R);
 
-  // 半径が小さくなりすぎたらリセット
-  if (store.spiralData.radius < minRadius) {
-    store.spiralData.radius = maxRadius;
-    store.spiralData.angle = 0;
-    store.spiralData.currentColor = random(baseColors);
+  s.radius += s.dir * s.se_vel;
+  s.angle += s.rt_vel;
+
+  if (
+    (s.dir < 0 && s.radius <= SPIRAL_MINRAD) ||
+    (s.dir > 0 && s.radius >= s.diameter / 2)
+  ) {
+    s.opa -= s.orgOpa / (s.rt_vel * 100);
+    if (s.opa <= 0) {
+      s.radius = s.dir > 0 ? 0 : s.diameter / 2;
+      s.angle = random(0, 360);
+      s.opa = s.orgOpa;
+      const col = random(cols);
+      col.setAlpha(s.opa);
+      s.col = col;
+    }
   }
 
   spiralLayer.pop();

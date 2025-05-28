@@ -11,4 +11,5 @@ body {
 canvas {
   display: block;
   margin: 0 auto; /* キャンバスの左右中央揃え */
+  border: solid lightgray 1px;
 }
