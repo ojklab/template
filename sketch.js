@@ -25,10 +25,10 @@ function draw() {
 
   // 開始から10秒未満まで
   if (SEC < 30) {
-    ws_spiral({ direction: [-1, -1], size: 100 });
+    // ws_spiral({ direction: [-1, -1], size: 100 });
     // ws_rebound({ num: 10, speed: [1, 10] });
     // ws_pulse({ target: 'opacity', R: 0 });
-    // ws_whirl({ size: [10, 100], opacity: [0.1, 1] });
+    ws_whirl({ direction: [-1, -1], fluctuate: 'off', diameter: 200 });
     // ws_whirl({ direction: 'shrink', diameter: width / 2 });
     // ws_pulse({ num: 30, mode: 'opacity', opacity: [0.1, 0.9] });
   }

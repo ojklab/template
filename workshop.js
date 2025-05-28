@@ -242,9 +242,10 @@ p5.prototype.ws_pulse = (arg) => {
 /*** 回転（ウィール）：複数の図形が円を描いて回転する ***/
 /* 引数： num, size, R, speed, colors, opacity, direction, fluctuate, diameter */
 // fluctuate（収縮・膨張を繰り返すか否か）: on, off (既定値: on)
-// direcrion（収縮か膨張か）: 負の値, 正の値 (既定値: -1)
+// direcrion（収縮／膨張方向）: 負の値, 正の値 (既定値: -1)
 // diameter（回転直径）: width以下の数値
 // 注） speedが配列の場合は、乱数ではなく、[回転速度, 収縮／膨張速度]になる
+// 注） directionが配列の場合は、乱数ではなく、[収縮／膨張方向, 左回り／右回り]になる
 p5.prototype.ws_whirl = (arg) => {
   // 初期設定
   if (store.whirl.length === 0) {
@@ -272,13 +273,13 @@ p5.prototype.ws_whirl = (arg) => {
       } else {
         R = (arg.R ?? 1.0) * (size / 2);
       }
-      let rt_vel, se_vel;
+      let h_vel, v_vel;
       if (Array.isArray(arg.speed)) {
-        rt_vel = arg.speed[0];
-        se_vel = arg.speed[1];
+        h_vel = arg.speed[0];
+        v_vel = arg.speed[1];
       } else {
-        rt_vel = arg.speed || 8;
-        se_vel = rt_vel;
+        h_vel = arg.speed || 8;
+        v_vel = h_vel;
       }
       let opa;
       if (Array.isArray(arg.opacity)) {
@@ -286,23 +287,29 @@ p5.prototype.ws_whirl = (arg) => {
       } else {
         opa = (arg.opacity ?? 1) * 255;
       }
-      const dir = arg.direction > 0 ? 1 : -1;
+      let h_dir, v_dir;
+      if (Array.isArray(arg.direction)) {
+        v_dir = arg.direction[0] > 0 ? 1 : -1;
+        h_dir = arg.direction[1] < 0 ? -1 : 1;
+      } else {
+        v_dir = arg.direction ?? -1;
+        h_dir = 1;
+      }
       const diameter = arg.diameter ?? width - size;
       const col = random(cols);
       col.setAlpha(opa);
 
       store.whirl.push({
         size: size,
-        x: HALF_W,
-        y: HALF_H,
         R: R,
         col: col,
-        rt_vel: rt_vel * 0.01,
-        se_vel: se_vel * 0.005,
+        h_vel: h_vel * 0.01,
+        v_vel: v_vel * 0.005,
         angle: (TWO_PI / num) * i,
-        dir: dir,
+        v_dir: v_dir,
+        h_dir: h_dir,
         fluctuate: arg.fluctuate == 'off' ? false : true,
-        radius: dir > 0 ? 0 : diameter / 2,
+        radius: v_dir > 0 ? 0 : diameter / 2,
         diameter: diameter,
         step: 0,
       });
@@ -314,26 +321,28 @@ p5.prototype.ws_whirl = (arg) => {
   whirlLayer.clear();
   whirlLayer.noStroke();
   whirlLayer.rectMode(CENTER);
+  whirlLayer.translate(HALF_W, HALF_H);
+  whirlLayer.angleMode(DEGREES);
 
   for (let s of store.whirl) {
-    s.radius += s.dir * s.se_vel * s.step;
-    s.x = HALF_W + cos(s.angle) * s.radius;
-    s.y = HALF_H + sin(s.angle) * s.radius;
+    s.radius += s.v_dir * s.v_vel * s.step;
+    const x = cos(s.angle) * s.radius;
+    const y = sin(s.angle) * s.radius;
 
     whirlLayer.fill(s.col);
-    whirlLayer.square(s.x, s.y, s.size, s.R);
+    whirlLayer.square(x, y, s.size, s.R);
 
-    s.angle += s.rt_vel;
+    s.angle += s.h_dir * s.h_vel;
     s.step += 1;
 
     if (
-      (s.dir < 0 && s.radius <= WHIRL_MINRAD) ||
-      (s.dir > 0 && s.radius >= s.diameter / 2)
+      (s.v_dir < 0 && s.radius <= WHIRL_MINRAD) ||
+      (s.v_dir > 0 && s.radius >= s.diameter / 2)
     ) {
       if (s.fluctuate) {
-        s.dir *= -1;
+        s.v_dir *= -1;
       } else {
-        s.radius = s.diameter / 2;
+        s.radius = s.v_dir > 0 ? 0 : s.diameter / 2;
       }
       s.step = 0;
     }
@@ -363,9 +372,6 @@ p5.prototype.ws_spiral = (arg) => {
 
   if (store.spiral.length == 0) {
     const size = arg.size ?? 50;
-    const col = random(cols);
-    const opa = (arg.opacity ?? 1) * 255;
-    col.setAlpha(opa);
     let h_vel, v_vel;
     if (Array.isArray(arg.speed)) {
       h_vel = arg.speed[0];
@@ -383,6 +389,9 @@ p5.prototype.ws_spiral = (arg) => {
       h_dir = 1;
     }
     const diameter = arg.diameter ?? width - size;
+    const col = random(cols);
+    const opa = (arg.opacity ?? 1) * 255;
+    col.setAlpha(opa);
 
     store.spiral.push({
       size: size,
@@ -422,8 +431,8 @@ p5.prototype.ws_spiral = (arg) => {
   col.setAlpha(s.opa);
   spiralLayer.fill(col);
 
-  let x = cos(s.angle) * s.radius;
-  let y = sin(s.angle) * s.radius;
+  const x = cos(s.angle) * s.radius;
+  const y = sin(s.angle) * s.radius;
   spiralLayer.square(x, y, s.size, s.R);
 
   s.angle += s.h_dir * s.h_vel;
