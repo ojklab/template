@@ -570,6 +570,7 @@ p5.prototype.ws_grid = (arg) => {
 
 /***  ライン：直線を任意の角度で動かす ***/
 /* 引数： num, size, weight, speed, cols, opacity, angle */
+// num： 図形の個数だけどおおよその数になる
 // size（長さ）: 数値
 // weight（太さ）: 数値（既定値：2）
 // angle（進行角度）: 0-360（真上が0度／既定値：90）
@@ -588,7 +589,7 @@ p5.prototype.ws_line = (arg) => {
 
   // 初期設定
   if (store.line.length === 0) {
-    const num = arg.num || 20;
+    const num = (arg.num ?? 20) * 2;
     for (let i = 0; i < num; i += 1) {
       let size;
       if (Array.isArray(arg.size)) {
@@ -599,7 +600,7 @@ p5.prototype.ws_line = (arg) => {
       let weight;
       const w = arg.weight;
       if (Array.isArray(w)) {
-        thickness = floor(random(w[0], w[1] + 1));
+        weight = floor(random(w[0], w[1] + 1));
       } else {
         weight = w ?? 2;
       }
@@ -619,11 +620,16 @@ p5.prototype.ws_line = (arg) => {
       const col = cols[i % cols.length];
       col.setAlpha(opa);
 
+      const range = abs(
+        floor((sin(radians(angle) + PI / 4) * width * (sqrt(2) - 1)) / 2)
+      );
+      console.log('range:' + range);
+
       store.line.push({
         size: size,
         weight: weight,
-        x: random(width - size),
-        y: random(weight / 2, height - weight / 2),
+        x: random(-size, width),
+        y: random(-range, height + range),
         col: col,
         opa: opa,
         vel: vel,
@@ -644,7 +650,6 @@ p5.prototype.ws_line = (arg) => {
 
     if (s.x > width) {
       s.x = -s.size - HALF_W;
-      s.y = random(s.weight / 2, height - s.weight / 2);
       s.col = random(cols);
       s.col.setAlpha(s.opa);
     }

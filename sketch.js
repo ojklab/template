@@ -21,13 +21,13 @@ function draw() {
 
   // 背景を白く塗りつぶす
   // background(frameCount%255, 255, 255);
-  background(255);
+  background(0);
 
   // 開始から10秒未満まで
   if (SEC < 10) {
-    ws_line({ angle: -45 });
-    // ws_spiral({ interval: 1, R: 0.5 });
     // ws_grid({ noise: 3, R: [0, 1] });
+    ws_line({ angle: 90, speed: 5, weight: 10 });
+    // ws_spiral({ interval: 1, R: 0.5 });
 
     // ws_rebound({ num: 10, speed: [1, 10] });
     // ws_pulse({ fade: 'size', R: 0.5 });
