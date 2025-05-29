@@ -23,6 +23,7 @@ let pulseLayer;
 let whirlLayer;
 let spiralLayer;
 let gridLayer;
+let lineLayer;
 
 let defaultCols;
 
@@ -39,6 +40,7 @@ p5.prototype.ws_setup = (arg) => {
   whirlLayer = createGraphics(width, height);
   spiralLayer = createGraphics(width, height);
   gridLayer = createGraphics(width, height);
+  lineLayer = createGraphics(width, height);
 
   HALF_W = width / 2;
   HALF_H = height / 2;
@@ -51,6 +53,7 @@ const store = {
   whirl: [],
   spiral: [],
   grid: [],
+  line: [],
 };
 
 /* ユーティリティ */
@@ -565,4 +568,93 @@ p5.prototype.ws_grid = (arg) => {
   image(gridLayer, 0, 0);
 };
 
-/* ライン：直線を任意の角度で動かす */
+/***  ライン：直線を任意の角度で動かす ***/
+/* 引数： num, size, weight, speed, cols, opacity, angle */
+// size（長さ）: 数値
+// weight（太さ）: 数値（既定値：2）
+// angle（進行角度）: 0-360（真上が0度／既定値：90）
+// 注） size, thickness, speed, opacityは [最小値, 最大値] の形式で乱数
+p5.prototype.ws_line = (arg) => {
+  const cols = arg.cols || [
+    color(252, 121, 121),
+    color(245, 158, 66),
+    color(126, 224, 201),
+    color(145, 168, 235),
+    color(139, 55, 191),
+    color(252, 249, 179),
+    color(255, 105, 180),
+  ];
+  const angle = arg.angle ?? 90;
+
+  // 初期設定
+  if (store.line.length === 0) {
+    const num = arg.num || 20;
+    for (let i = 0; i < num; i += 1) {
+      let size;
+      if (Array.isArray(arg.size)) {
+        size = floor(random(arg.size[0], arg.size[1] + 1));
+      } else {
+        size = arg.size ?? floor(random(20, 81));
+      }
+      let weight;
+      const w = arg.weight;
+      if (Array.isArray(w)) {
+        thickness = floor(random(w[0], w[1] + 1));
+      } else {
+        weight = w ?? 2;
+      }
+      let vel;
+      if (Array.isArray(arg.speed)) {
+        vel = floor(random(arg.speed[0], arg.speed[1] + 1));
+      } else {
+        vel = arg.speed || floor(random(10, 30));
+      }
+      let opa;
+      if (Array.isArray(arg.opacity)) {
+        opa = random(arg.opacity[0], arg.opacity[1]) * 255;
+      } else {
+        opa = (arg.opacity ?? 1) * 255;
+      }
+
+      const col = cols[i % cols.length];
+      col.setAlpha(opa);
+
+      store.line.push({
+        size: size,
+        weight: weight,
+        x: random(width - size),
+        y: random(weight / 2, height - weight / 2),
+        col: col,
+        opa: opa,
+        vel: vel,
+      });
+    }
+  }
+
+  // 図形の描画
+  lineLayer.push();
+  lineLayer.clear();
+  lineLayer.angleMode(DEGREES);
+  lineLayer.translate(HALF_W, HALF_H);
+  lineLayer.rotate(angle - 90);
+  lineLayer.translate(-HALF_W, -HALF_H);
+
+  for (let s of store.line) {
+    s.x += s.vel;
+
+    if (s.x > width) {
+      s.x = -s.size - HALF_W;
+      s.y = random(s.weight / 2, height - s.weight / 2);
+      s.col = random(cols);
+      s.col.setAlpha(s.opa);
+    }
+
+    lineLayer.stroke(s.col);
+    lineLayer.strokeWeight(s.weight);
+    lineLayer.line(s.x, s.y, s.x + s.size, s.y);
+  }
+
+  // レイヤー書き出し
+  lineLayer.pop();
+  image(lineLayer, 0, 0);
+};

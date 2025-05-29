@@ -25,11 +25,12 @@ function draw() {
 
   // 開始から10秒未満まで
   if (SEC < 10) {
+    ws_line({ angle: -45 });
     // ws_spiral({ interval: 1, R: 0.5 });
     // ws_grid({ noise: 3, R: [0, 1] });
 
     // ws_rebound({ num: 10, speed: [1, 10] });
-    ws_pulse({ fade: 'size', R: 0.5 });
+    // ws_pulse({ fade: 'size', R: 0.5 });
     // ws_whirl({ R: [0, 1] });
     // ws_whirl({ direction: 'shrink', diameter: width / 2 });
     // ws_pulse({ num: 30, mode: 'opacity', opacity: [0.1, 0.9] });
@@ -59,7 +60,7 @@ function draw() {
   /*** 書き換えるのはここまで ***/
 
   // 1秒毎に秒数をコンソールに表示
-  // if (frameCount % FPS == 0) print(SEC);
+  if (frameCount % FPS == 0) print(SEC);
 
   // プログラム終了
   if (SEC == END_TIME) {
