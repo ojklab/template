@@ -49,7 +49,7 @@ function draw() {
    */
 
   // ↓↓開始0秒から10秒まで実行↓↓
-  if (frameCount < FPS * 0) {
+  if (frameCount < FPS * 10) {
     /* キャンバスを塗りつぶす色を指定 */
     background(255); // 0〜255の値で指定（0が黒、255が白）
 
