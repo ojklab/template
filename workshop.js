@@ -9,11 +9,11 @@
  * 比較的共通する引数：
  * num    : 図形の数（グリッドは1辺の数、スパイラルは無し）
  * size   : 図形の1辺あるいは直径の長さ
- * R      : 角丸の比率（0から1の範囲／1が円）
+ * R      : 角丸の比率（0から1の範囲／0が四角、1が円）
  * speed  : 図形の変化速度
- * colors : 色セット [color(R,G,B), color(R,G,B), ...]
- * opacity: 不透明度（0から1の範囲／1が不透明）
- * 注） パラメータによっては [A, B] の形式で2つの値を与えられる（各コードの先頭に記載）
+ * colors : 色セット [color('色名'), color(R,G,B), ...]
+ * opacity: 不透明度（0から1の範囲／0が透明、1が不透明）
+ * 注） パラメータによっては [A, B] の形式で2つの値を与えられる（詳細は各テンプレートのコードの先頭に記載）
  * 注） colorsで単色を指定するときも [color(R,G,B)] と配列の形式にする
  */
 
@@ -393,9 +393,9 @@ p5.prototype.ws_spiral = (arg) => {
     let h_dir, v_dir;
     if (Array.isArray(arg.direction)) {
       v_dir = arg.direction[0] > 0 ? 1 : -1;
-      h_dir = arg.direction[1] > 0 ? 1 : -1;
+      h_dir = arg.direction[1] < 0 ? -1 : 1;
     } else {
-      v_dir = arg.direction ?? -1;
+      v_dir = arg.direction ?? 1;
       h_dir = 1;
     }
     const diameter = arg.diameter ?? width - size;
@@ -418,8 +418,6 @@ p5.prototype.ws_spiral = (arg) => {
       angle: random(0, 360),
       int: round(arg.interval * fps) ?? 0,
     });
-
-    console.log(store.spiral[0]);
   }
 
   spiralLayer.push();
@@ -574,7 +572,7 @@ p5.prototype.ws_grid = (arg) => {
 // size（長さ）: 数値
 // weight（太さ）: 数値（既定値：2）
 // angle（進行角度）: 0-360（真上が0度／既定値：90）
-// 注） size, thickness, speed, opacityは [最小値, 最大値] の形式で乱数
+// 注） size, weight, speed, opacityは [最小値, 最大値] の形式で乱数
 p5.prototype.ws_line = (arg) => {
   const cols = arg.cols || [
     color(252, 121, 121),
@@ -623,12 +621,11 @@ p5.prototype.ws_line = (arg) => {
       const range = abs(
         floor((sin(radians(angle) + PI / 4) * width * (sqrt(2) - 1)) / 2)
       );
-      console.log('range:' + range);
 
       store.line.push({
         size: size,
         weight: weight,
-        x: random(-size, width),
+        x: random(-size, width + size),
         y: random(-range, height + range),
         col: col,
         opa: opa,
@@ -649,7 +646,7 @@ p5.prototype.ws_line = (arg) => {
     s.x += s.vel;
 
     if (s.x > width) {
-      s.x = -s.size - HALF_W;
+      s.x = -s.size;
       s.col = random(cols);
       s.col.setAlpha(s.opa);
     }
