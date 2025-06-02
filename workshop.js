@@ -465,10 +465,11 @@ p5.prototype.ws_spiral = (arg) => {
 };
 
 /*** グリッド：敷き詰めた図形の色などが変化する ***/
-/* 引数： num, size, R, speed, colors, opacity, interval, noise */
+/* 引数： num, size, R, colors, opacity, interval, noise */
 // num（一辺の図形数）： 個数
 // interval（色変化間隔）: 秒 （既定値： 色変化なし）
 // noise（振動の大きさ）: 数値 （規定値： 振動なし）
+// 注） size, R, opacity, interval, noiseは [最小値, 最大値] の形式で乱数
 p5.prototype.ws_grid = (arg) => {
   const num = arg.num || 5;
   const cols = arg.colors || [
@@ -498,12 +499,6 @@ p5.prototype.ws_grid = (arg) => {
         } else {
           R = arg.R ?? 1.0;
         }
-        let vel;
-        if (Array.isArray(arg.speed)) {
-          vel = floor(random(arg.speed[0], arg.speed[1] + 1));
-        } else {
-          vel = arg.speed || floor(random(2, 6));
-        }
         let opa;
         if (Array.isArray(arg.opacity)) {
           opa = random(arg.opacity[0], arg.opacity[1]) * 255;
@@ -531,6 +526,7 @@ p5.prototype.ws_grid = (arg) => {
           x: x * step + floor(step / 2),
           y: y * step + floor(step / 2),
           R: R,
+          vel: vel,
           col: col,
           opa: opa,
           sigma: sigma,
@@ -547,6 +543,7 @@ p5.prototype.ws_grid = (arg) => {
 
   for (const s of store.grid) {
     s.size = abs(randomGaussian(s.size, s.sigma));
+
     if (frameCount % s.int == 0) {
       if (Array.isArray(arg.size)) {
         s.size = floor(random(arg.size[0], arg.size[1] + 1));
