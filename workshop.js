@@ -526,7 +526,6 @@ p5.prototype.ws_grid = (arg) => {
           x: x * step + floor(step / 2),
           y: y * step + floor(step / 2),
           R: R,
-          vel: vel,
           col: col,
           opa: opa,
           sigma: sigma,
