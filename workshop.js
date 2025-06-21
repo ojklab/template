@@ -53,7 +53,7 @@ const store = {
   whirl: [],
   spiral: [],
   grid: [],
-  line: [],
+  line: []
 };
 
 /* ユーティリティ */
@@ -74,7 +74,7 @@ p5.prototype.ws_rebound = (arg) => {
       color(145, 168, 235),
       color(139, 55, 191),
       color(252, 249, 179),
-      color(255, 105, 180),
+      color(255, 105, 180)
     ];
 
     for (let i = 0; i < num; i += 1) {
@@ -113,7 +113,7 @@ p5.prototype.ws_rebound = (arg) => {
         R: R,
         col: col,
         vx: rand01() * vel,
-        vy: rand01() * vel,
+        vy: rand01() * vel
       });
     }
   }
@@ -160,7 +160,7 @@ p5.prototype.ws_pulse = (arg) => {
       color(145, 168, 235),
       color(139, 55, 191),
       color(252, 249, 179),
-      color(255, 105, 180),
+      color(255, 105, 180)
     ];
 
     for (let i = 0; i < num; i += 1) {
@@ -204,7 +204,7 @@ p5.prototype.ws_pulse = (arg) => {
         y: random(size / 2, height - size / 2),
         R: R,
         col: col,
-        vel: vel,
+        vel: vel
       });
     }
   }
@@ -248,12 +248,12 @@ p5.prototype.ws_pulse = (arg) => {
 
 /*** 回転（ウィール）：複数の図形が円を描いて回転する ***/
 /* 引数： num, size, R, speed, colors, opacity, direction, fluctuate, diameter */
-// fluctuate（収縮・膨張を繰り返すか否か）: on, off (既定値: on)
-// direcrion（収縮／膨張方向）: 負の値, 正の値 (既定値: -1)
+// fluctuate（収縮・膨張を繰り返すか否か）: 'on', 'off' (既定値: 'on')
+// direcrion: 収縮…'def', 膨張…'inf', 右回り…'right', 左回り…'left' (既定値: 'def' & 'right')
 // diameter（回転直径）: width以下の数値
 // 注） size, R, opacityは [最小値, 最大値] の形式で乱数
 // 注） speedが配列の場合は、乱数ではなく、[回転速度, 収縮／膨張速度]になる
-// 注） directionが配列の場合は、乱数ではなく、[収縮／膨張方向, 左回り／右回り]になる
+// 注） directionが配列の場合は[収縮／膨張方向, 左回り／右回り]になる
 p5.prototype.ws_whirl = (arg) => {
   // 初期設定
   if (store.whirl.length === 0) {
@@ -265,7 +265,7 @@ p5.prototype.ws_whirl = (arg) => {
       color(145, 168, 235),
       color(139, 55, 191),
       color(252, 249, 179),
-      color(255, 105, 180),
+      color(255, 105, 180)
     ];
 
     for (let i = 0; i < num; i += 1) {
@@ -297,11 +297,19 @@ p5.prototype.ws_whirl = (arg) => {
       }
       let h_dir, v_dir;
       if (Array.isArray(arg.direction)) {
-        v_dir = arg.direction[0] > 0 ? 1 : -1;
-        h_dir = arg.direction[1] < 0 ? -1 : 1;
+        v_dir = arg.direction[0] == 'inf' ? 1 : -1;
+        h_dir = arg.direction[1] == 'left' ? -1 : 1;
       } else {
-        v_dir = arg.direction ?? -1;
-        h_dir = 1;
+        if (arg.direction == 'inf' || arg.direction == 'def') {
+          v_dir = arg.direction == 'inf' ? 1 : -1;
+          h_dir = 1;
+        } else if (arg.direction == 'right' || arg.direction == 'left') {
+          v_dir = -1;
+          h_dir = arg.direction == 'left' ? -1 : 1;
+        } else {
+          v_dir = -1;
+          h_dir = 1;
+        }
       }
       const diameter = arg.diameter ?? width - size;
       const col = random(cols);
@@ -319,7 +327,7 @@ p5.prototype.ws_whirl = (arg) => {
         fluctuate: arg.fluctuate == 'off' ? false : true,
         radius: v_dir > 0 ? 0 : diameter / 2,
         diameter: diameter,
-        step: 0,
+        step: 0
       });
     }
   }
@@ -343,10 +351,7 @@ p5.prototype.ws_whirl = (arg) => {
     s.angle += s.h_dir * s.h_vel;
     s.step += 1;
 
-    if (
-      (s.v_dir < 0 && s.radius <= WHIRL_MINRAD) ||
-      (s.v_dir > 0 && s.radius >= s.diameter / 2)
-    ) {
+    if ((s.v_dir < 0 && s.radius <= WHIRL_MINRAD) || (s.v_dir > 0 && s.radius >= s.diameter / 2)) {
       if (s.fluctuate) {
         s.v_dir *= -1;
       } else {
@@ -376,7 +381,7 @@ p5.prototype.ws_spiral = (arg) => {
     color(145, 168, 235),
     color(139, 55, 191),
     color(252, 249, 179),
-    color(255, 105, 180),
+    color(255, 105, 180)
   ];
   const fps = frameRate();
 
@@ -392,11 +397,19 @@ p5.prototype.ws_spiral = (arg) => {
     }
     let h_dir, v_dir;
     if (Array.isArray(arg.direction)) {
-      v_dir = arg.direction[0] > 0 ? 1 : -1;
-      h_dir = arg.direction[1] < 0 ? -1 : 1;
+      v_dir = arg.direction[0] == 'inf' ? 1 : -1;
+      h_dir = arg.direction[1] == 'left' ? -1 : 1;
     } else {
-      v_dir = arg.direction ?? 1;
-      h_dir = 1;
+      if (arg.direction == 'inf' || arg.direction == 'def') {
+        v_dir = arg.direction == 'inf' ? 1 : -1;
+        h_dir = 1;
+      } else if (arg.direction == 'right' || arg.direction == 'left') {
+        v_dir = -1;
+        h_dir = arg.direction == 'left' ? -1 : 1;
+      } else {
+        v_dir = -1;
+        h_dir = 1;
+      }
     }
     const diameter = arg.diameter ?? width - size;
     const col = random(cols);
@@ -416,7 +429,7 @@ p5.prototype.ws_spiral = (arg) => {
       radius: v_dir > 0 ? 0 : diameter / 2,
       diameter: diameter,
       angle: random(0, 360),
-      int: round(arg.interval * fps) ?? 0,
+      int: round(arg.interval * fps) ?? 0
     });
   }
 
@@ -445,10 +458,7 @@ p5.prototype.ws_spiral = (arg) => {
   s.angle += s.h_dir * s.h_vel;
   s.radius += s.v_dir * s.v_vel;
 
-  if (
-    (s.v_dir < 0 && s.radius <= SPIRAL_MINRAD) ||
-    (s.v_dir > 0 && s.radius >= s.diameter / 2)
-  ) {
+  if ((s.v_dir < 0 && s.radius <= SPIRAL_MINRAD) || (s.v_dir > 0 && s.radius >= s.diameter / 2)) {
     s.opa -= s.orgOpa / (s.h_vel * 100);
     if (s.opa <= 0) {
       s.radius = s.v_dir > 0 ? 0 : s.diameter / 2;
@@ -479,7 +489,7 @@ p5.prototype.ws_grid = (arg) => {
     color(145, 168, 235),
     color(139, 55, 191),
     color(252, 249, 179),
-    color(255, 105, 180),
+    color(255, 105, 180)
   ];
   const step = floor(width / num);
 
@@ -529,7 +539,7 @@ p5.prototype.ws_grid = (arg) => {
           col: col,
           opa: opa,
           sigma: sigma,
-          int: round(int * fps),
+          int: round(int * fps)
         });
       }
     }
@@ -577,7 +587,7 @@ p5.prototype.ws_line = (arg) => {
     color(145, 168, 235),
     color(139, 55, 191),
     color(252, 249, 179),
-    color(255, 105, 180),
+    color(255, 105, 180)
   ];
   const angle = arg.angle ?? 90;
 
@@ -614,9 +624,7 @@ p5.prototype.ws_line = (arg) => {
       const col = cols[i % cols.length];
       col.setAlpha(opa);
 
-      const range = abs(
-        floor((sin(radians(angle) + PI / 4) * width * (sqrt(2) - 1)) / 2)
-      );
+      const range = abs(floor((sin(radians(angle) + PI / 4) * width * (sqrt(2) - 1)) / 2));
 
       store.line.push({
         size: size,
@@ -625,7 +633,7 @@ p5.prototype.ws_line = (arg) => {
         y: random(-range, height + range),
         col: col,
         opa: opa,
-        vel: vel,
+        vel: vel
       });
     }
   }

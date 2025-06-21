@@ -62,8 +62,8 @@ function draw() {
      */
     // ws_rebound({}); // リバウンド
     // ws_pulse({}); // パルス
-    // ws_whirl({}); // ウィール
-    // ws_spiral({}); // スパイラル
+    // ws_whirl({ direction: ['inf', 'left'] }); // ウィール
+    ws_spiral({ direction: ['def', 'left'], interval: [1, 3] }); // スパイラル
     // ws_grid({}); // グリッド
     // ws_line({}); // ライン
   }
